@@ -6,9 +6,12 @@ module.exports = {
     'jest/globals': true
   },
   extends: [
-    'plugin:jest/recommended',
+    'plugin:@typescript-eslint/recommended',
     'standard',
-    'plugin:@typescript-eslint/recommended'
+    'plugin:jest/recommended',
+    'plugin:prettier/recommended',
+    'prettier/@typescript-eslint',
+    'prettier/standard'
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -19,6 +22,6 @@ module.exports = {
     },
     project: './tsconfig.json'
   },
-  plugins: ['jest', '@typescript-eslint'],
+  plugins: ['@typescript-eslint', 'standard', 'jest', 'prettier'],
   rules: {}
 }
