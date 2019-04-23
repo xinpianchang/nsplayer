@@ -3,31 +3,40 @@
   "version": "1.0.0",
   "description": "rollup boilerplate for typescript",
   "keywords": [
-    "rollup",
-    "typescript",
+    "boilerplate",
     "eslint",
-    "boilerplate"
+    "rollup",
+    "typescript"
   ],
-  "author": "xg4 <xingor4@gmail.com>",
+  "homepage": "https://github.com/xg4/rollup-typescript-boilerplate#readme",
+  "bugs": {
+    "url": "https://github.com/xg4/rollup-typescript-boilerplate/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xg4/rollup-typescript-boilerplate.git"
+  },
   "license": "MIT",
-  "main": "dist/index.cjs.js",
-  "module": "dist/index.esm.js",
-  "browser": "dist/index.umd.js",
-  "typings": "dist/types/index.d.ts",
-  "types": "dist/types/index.d.ts",
+  "author": "xg4 <xingor4@gmail.com>",
   "files": [
     "dist"
   ],
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "browser": "dist/index.umd.js",
+  "types": "dist/types/index.d.ts",
+  "typings": "dist/types/index.d.ts",
   "scripts": {
+    "build": "npm run clean && npm run build:types && npm run build:js",
+    "build:js": "rollup -c",
+    "build:types": "tsc --emitDeclarationOnly",
+    "clean": "rimraf dist",
+    "coverage": "codecov",
     "dev": "rollup -c -w",
     "lint": "eslint --ext .ts,.js --ignore-path .gitignore . --fix",
-    "test": "jest",
+    "test": "npm run lint && jest --coverage",
     "type-check": "tsc --noEmit",
-    "type-check:watch": "npm run type-check -- --watch",
-    "build:types": "tsc --emitDeclarationOnly",
-    "build:js": "rollup -c",
-    "build": "npm run build:types && npm run build:js",
-    "precommit": "lint-staged"
+    "type-check:watch": "npm run type-check -- --watch"
   },
   "husky": {
     "hooks": {
@@ -35,8 +44,7 @@
     }
   },
   "lint-staged": {
-    "src/**/*.{ts,js}": [
-      "npm run lint",
+    "*.{ts,js,json,md}": [
       "prettier --write",
       "git add"
     ]
@@ -48,6 +56,7 @@
     "@types/jest": "^24.0.11",
     "@typescript-eslint/eslint-plugin": "^1.7.0",
     "@typescript-eslint/parser": "^1.7.0",
+    "codecov": "^3.3.0",
     "eslint": "^5.16.0",
     "eslint-config-prettier": "^4.1.0",
     "eslint-config-standard": "^12.0.0",
@@ -61,19 +70,12 @@
     "jest": "^24.7.1",
     "lint-staged": "^8.1.5",
     "prettier": "^1.17.0",
+    "rimraf": "^2.6.3",
     "rollup": "^1.10.1",
     "rollup-plugin-babel": "^4.3.2",
     "rollup-plugin-commonjs": "^9.3.4",
     "rollup-plugin-node-resolve": "^4.2.3",
     "rollup-plugin-terser": "^4.0.4",
     "typescript": "^3.4.4"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/xg4/rollup-typescript-boilerplate.git"
-  },
-  "bugs": {
-    "url": "https://github.com/xg4/rollup-typescript-boilerplate/issues"
-  },
-  "homepage": "https://github.com/xg4/rollup-typescript-boilerplate#readme"
+  }
 }

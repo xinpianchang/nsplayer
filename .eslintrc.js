@@ -1,6 +1,7 @@
 module.exports = {
   root: true,
   env: {
+    es6: true,
     browser: true,
     node: true,
     'jest/globals': true
@@ -23,5 +24,5 @@ module.exports = {
     project: './tsconfig.json'
   },
   plugins: ['@typescript-eslint', 'standard', 'jest', 'prettier'],
-  rules: {}
+  rules: { 'no-console': process.env.NODE_ENV !== 'production' ? 0 : 2 }
 }
