@@ -2,9 +2,14 @@ module.exports = {
   root: true,
   env: {
     browser: true,
-    node: true
+    node: true,
+    'jest/globals': true
   },
-  extends: ['standard', 'plugin:@typescript-eslint/recommended'],
+  extends: [
+    'plugin:jest/recommended',
+    'standard',
+    'plugin:@typescript-eslint/recommended'
+  ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 2018,
@@ -14,6 +19,6 @@ module.exports = {
     },
     project: './tsconfig.json'
   },
-  plugins: ['@typescript-eslint'],
+  plugins: ['jest', '@typescript-eslint'],
   rules: {}
 }
