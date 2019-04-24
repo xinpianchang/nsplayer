@@ -4,7 +4,9 @@ node_js:
   - '11'
   - '10'
   - '8'
-  - '6'
+
+script:
+  - npm run test:cov
 
 after_success:
-  - npm run coverage
+  - npx codecov

@@ -4,7 +4,7 @@ module.exports = {
     es6: true,
     browser: true,
     node: true,
-    'jest/globals': true
+    jest: true
   },
   extends: [
     'plugin:@typescript-eslint/recommended',

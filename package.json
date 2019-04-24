@@ -31,10 +31,12 @@
     "build:js": "rollup -c",
     "build:types": "tsc --emitDeclarationOnly",
     "clean": "rimraf dist",
-    "coverage": "codecov",
     "dev": "rollup -c -w",
     "lint": "eslint --ext .ts,.js --ignore-path .gitignore . --fix",
-    "test": "npm run lint && jest --coverage",
+    "pretest": "npm run lint",
+    "test": "jest",
+    "test:cov": "npm run test -- --coverage",
+    "test:watch": "jest --watch --notify",
     "type-check": "tsc --noEmit",
     "type-check:watch": "npm run type-check -- --watch"
   },
@@ -44,8 +46,13 @@
     }
   },
   "lint-staged": {
-    "*.{ts,js,json,md}": [
+    "*.{json,md}": [
       "prettier --write",
+      "git add"
+    ],
+    "*.{js,jsx,ts,tsx}": [
+      "prettier --write",
+      "eslint --fix",
       "git add"
     ]
   },
@@ -56,7 +63,6 @@
     "@types/jest": "^24.0.11",
     "@typescript-eslint/eslint-plugin": "^1.7.0",
     "@typescript-eslint/parser": "^1.7.0",
-    "codecov": "^3.3.0",
     "eslint": "^5.16.0",
     "eslint-config-prettier": "^4.1.0",
     "eslint-config-standard": "^12.0.0",
