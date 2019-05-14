@@ -28,17 +28,23 @@
   "types": "dist/types/index.d.ts",
   "typings": "dist/types/index.d.ts",
   "scripts": {
-    "build": "npm run clean && npm run build:types && npm run build:js",
+    "prebuild": "npm run clean",
+    "build": "npm run build:types && npm run build:js",
     "build:js": "rollup -c",
     "build:types": "tsc --emitDeclarationOnly",
     "clean": "rimraf dist",
     "lint": "eslint --ext .ts,.js --ignore-path .gitignore . --fix",
+    "prepublish": "npm run build",
+    "postpublish": "git push && git push --tags",
     "start": "rollup -c -w",
+    "pretest": "npm run lint",
     "test": "jest",
     "test:cov": "npm run test -- --coverage",
     "test:watch": "jest --watch --notify",
     "type-check": "tsc --noEmit",
-    "type-check:watch": "npm run type-check -- --watch"
+    "type-check:watch": "npm run type-check -- --watch",
+    "preversion": "npm run test",
+    "postversion": "npm publish"
   },
   "husky": {
     "hooks": {
@@ -60,7 +66,7 @@
     "@babel/core": "^7.4.4",
     "@babel/preset-env": "^7.4.4",
     "@babel/preset-typescript": "^7.3.3",
-    "@types/jest": "^24.0.12",
+    "@types/jest": "^24.0.13",
     "@typescript-eslint/eslint-plugin": "^1.9.0",
     "@typescript-eslint/parser": "^1.9.0",
     "eslint": "^5.16.0",
