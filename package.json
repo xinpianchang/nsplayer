@@ -34,7 +34,7 @@
     "build:types": "tsc --emitDeclarationOnly",
     "clean": "rimraf dist",
     "lint": "eslint --ext .ts,.js --ignore-path .gitignore . --fix",
-    "prepublish": "npm run build",
+    "prepublishOnly": "npm run build",
     "postpublish": "git push && git push --tags",
     "start": "rollup -c -w",
     "pretest": "npm run lint",
