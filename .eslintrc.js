@@ -24,5 +24,8 @@ module.exports = {
     project: './tsconfig.json'
   },
   plugins: ['@typescript-eslint', 'standard', 'jest', 'prettier'],
-  rules: { 'no-console': process.env.NODE_ENV !== 'production' ? 0 : 2 }
+  rules: {
+    'no-console': process.env.NODE_ENV !== 'production' ? 0 : 2,
+    '@typescript-eslint/explicit-function-return-type': 0
+  }
 }
