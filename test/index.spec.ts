@@ -1,5 +1,5 @@
-import { sum } from '../src'
+import RollupTsBoilerplate from '../src'
 
-test('test sum func', () => {
-  expect(sum(1, 2)).toEqual(3)
+test('Rollup Ts Boilerplate class', () => {
+  expect(new RollupTsBoilerplate()).toBeInstanceOf(RollupTsBoilerplate)
 })
