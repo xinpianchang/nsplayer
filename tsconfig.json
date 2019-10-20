@@ -21,6 +21,6 @@
     "esModuleInterop": true,
     "jsx": "react"
   },
-  "include": ["src/**/*", "test/**/*"],
+  "include": ["src/**/*", "test/**/*", "rollup.config.js"],
   "exclude": ["node_modules", "dist"]
 }
