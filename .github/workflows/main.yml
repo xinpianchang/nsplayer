@@ -1,5 +1,8 @@
 name: Rollup Typescript Boilerplate
-on: [push]
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   test-windows:
@@ -58,3 +61,6 @@ jobs:
         env:
           CI: true
         run: npm run test
+
+      - name: Coverage
+        run: npx codecov
