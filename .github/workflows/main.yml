@@ -1,0 +1,60 @@
+name: Rollup Typescript Boilerplate
+on: [push]
+
+jobs:
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+
+      - name: Node Version
+        uses: actions/setup-node@master
+        with:
+          node-version: '10.x'
+
+      - name: Install
+        run: yarn
+
+      - name: Test
+        env:
+          CI: true
+        run: npm run test
+
+  test-macOS:
+    runs-on: macOS-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+
+      - name: Node Version
+        uses: actions/setup-node@master
+        with:
+          node-version: '10.x'
+
+      - name: Install
+        run: yarn
+
+      - name: Test
+        env:
+          CI: true
+        run: npm run test
+
+  test-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+
+      - name: Node Version
+        uses: actions/setup-node@master
+        with:
+          node-version: '10.x'
+
+      - name: Install
+        run: yarn
+
+      - name: Test
+        env:
+          CI: true
+        run: npm run test
