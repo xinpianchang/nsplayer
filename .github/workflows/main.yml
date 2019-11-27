@@ -60,7 +60,7 @@ jobs:
       - name: Test
         env:
           CI: 'true'
-        run: npm run test
+        run: npm run test:cov
 
       - name: Coverage
         run: npx codecov
