@@ -1,4 +1,4 @@
-name: Rollup Typescript Boilerplate
+name: Boilerplate
 on:
   push:
     branches:

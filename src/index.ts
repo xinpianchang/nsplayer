@@ -1,1 +1,3 @@
-export default class RollupTypescriptBoilerplate {}
+export default function Boilerplate() {
+  return 'Boilerplate'
+}

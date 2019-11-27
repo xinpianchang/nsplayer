@@ -1,7 +1,7 @@
-import RollupTypescriptBoilerplate from '../src'
+import Boilerplate from '../src'
 
-test('Rollup Ts Boilerplate class', () => {
-  expect(new RollupTypescriptBoilerplate()).toBeInstanceOf(
-    RollupTypescriptBoilerplate
-  )
+test('Boilerplate', () => {
+  const BoilerplateFn = jest.fn(Boilerplate)
+  expect(BoilerplateFn()).toBe('Boilerplate')
+  expect(BoilerplateFn).toHaveBeenCalled()
 })
