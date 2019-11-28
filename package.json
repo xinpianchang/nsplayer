@@ -1,6 +1,6 @@
 {
   "name": "@xg4/rollup-typescript-boilerplate",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "rollup boilerplate for typescript",
   "keywords": [
     "boilerplate",
@@ -36,9 +36,7 @@
     "lint": "eslint src/**/* --fix",
     "prepublishOnly": "npm run build",
     "postpublish": "git push && git push --tags",
-    "release:major": "npm version major -m \"build: release v%s\" ",
-    "release:minor": "npm version minor -m \"build: release v%s\" ",
-    "release:patch": "npm version patch -m \"build: release v%s\" ",
+    "release": "standard-version",
     "start": "rollup -c -w",
     "pretest": "npm run lint",
     "test": "jest",
@@ -94,6 +92,7 @@
     "rollup-plugin-commonjs": "10.1.0",
     "rollup-plugin-node-resolve": "5.2.0",
     "rollup-plugin-terser": "5.1.2",
+    "standard-version": "^7.0.1",
     "typescript": "3.7.2"
   }
 }
