@@ -35,17 +35,17 @@
     "clean": "rimraf dist",
     "lint": "eslint src/**/* --fix",
     "prepublishOnly": "npm run build",
-    "postpublish": "git push && git push --tags",
+    "postpublish": "git push --follow-tags origin master",
+    "prerelease": "npm run test",
     "release": "standard-version",
+    "postrelease": "npm publish",
     "start": "rollup -c -w",
     "pretest": "npm run lint",
     "test": "jest",
     "test:cov": "npm run test -- --coverage",
     "test:watch": "npm run test -- --watch --notify",
     "type-check": "tsc --noEmit",
-    "type-check:watch": "npm run type-check -- --watch",
-    "preversion": "npm run test",
-    "postversion": "npm publish"
+    "type-check:watch": "npm run type-check -- --watch"
   },
   "husky": {
     "hooks": {
