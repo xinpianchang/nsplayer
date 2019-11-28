@@ -1,6 +1,6 @@
 {
   "name": "@xg4/rollup-typescript-boilerplate",
-  "version": "0.0.2",
+  "version": "0.0.0",
   "description": "rollup boilerplate for typescript",
   "keywords": [
     "boilerplate",
@@ -35,7 +35,7 @@
     "clean": "rimraf dist",
     "lint": "eslint src/**/* --fix",
     "prepublishOnly": "npm run build",
-    "postpublish": "git push --follow-tags origin master",
+    "postpublish": "git push --follow-tags",
     "prerelease": "npm run test",
     "release": "standard-version",
     "postrelease": "npm publish",
