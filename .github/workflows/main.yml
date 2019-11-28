@@ -64,3 +64,8 @@ jobs:
 
       - name: Coverage
         run: npx codecov
+
+      - name: Publish
+        run: |
+          npm install -g @semantic-release/changelog @semantic-release/git
+          npx semantic-release
