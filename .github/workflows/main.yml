@@ -67,5 +67,5 @@ jobs:
 
       - name: Publish
         run: |
-          npm install -g @semantic-release/changelog @semantic-release/git
+          yarn add --dev @semantic-release/changelog @semantic-release/git
           npx semantic-release
