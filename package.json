@@ -1,6 +1,6 @@
 {
   "name": "@xg4/rollup-typescript-boilerplate",
-  "version": "0.0.0-development",
+  "version": "0.0.0",
   "description": "rollup boilerplate for typescript",
   "keywords": [
     "boilerplate",
@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/xg4/rollup-typescript-boilerplate.git"
+    "url": "git+https://github.com/xg4/rollup-typescript-boilerplate.git"
   },
   "license": "MIT",
   "author": "xg4 <xingor4@gmail.com>",
