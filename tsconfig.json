@@ -17,5 +17,5 @@
     "noUnusedParameters": true
   },
   "exclude": ["node_modules", "dist"],
-  "include": ["src", "__tests__", "rollup.config.js"]
+  "include": ["src"]
 }
