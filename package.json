@@ -33,7 +33,9 @@
     "build:js": "rollup -c",
     "build:types": "tsc --emitDeclarationOnly",
     "clean": "rimraf dist",
-    "lint": "eslint src/**/* --fix",
+    "format": "prettier --write \"{src,test,examples}/**/*.{ts,tsx}\"",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "npm run lint -- --fix",
     "prepublishOnly": "npm run build",
     "postpublish": "git push --follow-tags",
     "prerelease": "npm run test",
@@ -44,8 +46,8 @@
     "test": "jest",
     "test:cov": "npm run test -- --coverage",
     "test:watch": "npm run test -- --watch --notify",
-    "type-check": "tsc --noEmit",
-    "type-check:watch": "npm run type-check -- --watch"
+    "types:check": "tsc --noEmit",
+    "types:watch": "npm run types:check -- --watch"
   },
   "husky": {
     "hooks": {
@@ -80,13 +82,8 @@
     "@typescript-eslint/parser": "2.10.0",
     "eslint": "6.7.2",
     "eslint-config-prettier": "6.7.0",
-    "eslint-config-standard": "14.1.0",
-    "eslint-plugin-import": "2.18.2",
     "eslint-plugin-jest": "23.1.1",
-    "eslint-plugin-node": "10.0.0",
     "eslint-plugin-prettier": "3.1.1",
-    "eslint-plugin-promise": "4.2.1",
-    "eslint-plugin-standard": "4.0.1",
     "husky": "3.1.0",
     "jest": "24.9.0",
     "lint-staged": "9.5.0",
