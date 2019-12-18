@@ -69,6 +69,10 @@
     "*.{json,md,yml}": [
       "prettier --write",
       "git add"
+    ],
+    "package.json": [
+      "npx sort-package-json",
+      "git add"
     ]
   },
   "devDependencies": {
