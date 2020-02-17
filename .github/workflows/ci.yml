@@ -10,12 +10,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v1
 
-      - name: Node Version
-        uses: actions/setup-node@master
+      - name: Use Node.js
+        uses: actions/setup-node@v1
         with:
-          node-version: '10.x'
+          node-version: '12.x'
 
       - name: Install
         run: yarn
@@ -24,17 +24,20 @@ jobs:
         env:
           CI: true
         run: npm run test
+
+      - name: Build
+        run: npm run build
 
   test-macos:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v1
 
-      - name: Node Version
-        uses: actions/setup-node@master
+      - name: Use Node.js
+        uses: actions/setup-node@v1
         with:
-          node-version: '10.x'
+          node-version: '12.x'
 
       - name: Install
         run: yarn
@@ -43,6 +46,9 @@ jobs:
         env:
           CI: true
         run: npm run test
+
+      - name: Build
+        run: npm run build
 
   test-ubuntu:
     runs-on: ubuntu-latest
@@ -69,6 +75,9 @@ jobs:
         env:
           CI: true
         run: npm run test:cov
+
+      - name: Build
+        run: npm run build
 
       - name: Coverage
         run: npx codecov
