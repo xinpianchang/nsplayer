@@ -27,15 +27,14 @@
     "dist"
   ],
   "scripts": {
-    "prebuild": "npm run clean",
+    "prebuild": "npm run test && npm run clean",
     "build": "npm run build:types && npm run build:js",
     "build:js": "rollup -c",
     "build:types": "tsc --emitDeclarationOnly",
     "clean": "rimraf dist",
     "lint": "eslint src/**/* --fix",
-    "prepublishOnly": "npm run build",
     "pretty": "prettier src/**/* --write",
-    "prerelease": "npm run test",
+    "prerelease": "npm run build",
     "release": "npx standard-version",
     "postrelease": "git push --follow-tags",
     "start": "rollup -c -w",

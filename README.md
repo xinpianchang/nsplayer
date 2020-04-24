@@ -11,7 +11,7 @@ $ git clone git@github.com:xg4/rollup-typescript-boilerplate.git <your project n
 # or
 $ git clone https://github.com/xg4/rollup-typescript-boilerplate <your project name>
 
-$ cd rollup-typescript-boilerplate
+$ cd <your project name>
 $ rm -rf .git
 $ git init
 $ git remote add origin <your git repo>
