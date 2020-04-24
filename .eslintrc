@@ -22,7 +22,8 @@
     "ecmaFeatures": {
       "jsx": true
     },
-    "project": "./tsconfig.json"
+    "project": "./tsconfig.json",
+    "createDefaultProgram": true
   },
   "plugins": ["@typescript-eslint", "jest", "prettier"],
   "rules": {
