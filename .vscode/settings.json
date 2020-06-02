@@ -1,0 +1,9 @@
+{
+  "javascript.preferences.quoteStyle": "single",
+  "typescript.preferences.quoteStyle": "single",
+  "javascript.format.semicolons": "remove",
+  "typescript.format.semicolons": "remove",
+  "editor.tabSize": 2,
+  "editor.wrappingIndent": "indent",
+  "files.insertFinalNewline": true
+}

@@ -1,4 +1,9 @@
 {
   "presets": ["@babel/env", "@babel/typescript"],
-  "plugins": []
+  "plugins": [
+    ["@babel/plugin-transform-typescript", {
+      "allowNamespaces": true
+    }],
+    "@babel/plugin-proposal-class-properties"
+  ]
 }

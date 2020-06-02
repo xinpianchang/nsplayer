@@ -1,7 +1,6 @@
-import Boilerplate from '../src'
+import NSPlayer from '../src'
 
-test('Boilerplate', () => {
-  const BoilerplateFn = jest.fn(Boilerplate)
-  expect(BoilerplateFn()).toBe('Boilerplate')
-  expect(BoilerplateFn).toHaveBeenCalled()
+test('NSPlayer', () => {
+  // const player = new NSPlayer()
+  // expect(player).not.toBeNull()
 })

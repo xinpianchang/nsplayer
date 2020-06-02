@@ -8,13 +8,12 @@
     "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "jsx": "react",
     "declaration": true,
     "declarationDir": "dist/types",
     "noFallthroughCasesInSwitch": true,
-    "noImplicitReturns": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    "lib": ["DOM", "ES2015"]
   },
   "exclude": ["node_modules", "dist"],
   "include": ["src"]
