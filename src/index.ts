@@ -1,16 +1,28 @@
 // Import here Polyfills if needed. Recommended core-js (npm i -D core-js)
 // import 'core-js/fn/array.find'
 // ...
-
+// import Promise from 'promise-polyfill';
+import Promise from 'promise-polyfill'
 import { BasePlayer } from './baseplayer'
 import { MutableDisposable, toDisposable } from './common/lifecycle'
 import { Emitter, EmitterOptions } from './common/event'
+import { Source, QualityWithName, VideoType } from './types'
+import coreplayer from './coreplayer'
+
+// import Hls from 'hls.js'
+// import Dash from 'dash.js'
 // import { Source } from './types'
 
 export interface NSPlayerOptions {
   el?: HTMLElement
   selector?: string
   emitter?: EmitterOptions
+  source?: Source
+  pluginOptions?: {
+    hls: any
+    dash: any
+  }
+  autoplay?: boolean
 }
 
 export interface IPlayer extends BasePlayer {
@@ -26,12 +38,24 @@ export interface IPlayer extends BasePlayer {
  * NSPlayer
  */
 export default class NSPlayer extends BasePlayer implements IPlayer {
+  // notice(arg0: string) {
+  //   throw new Error('Method not implemented.')
+  // }
   private _el: HTMLElement | null = null
   private _disposableParentElement = new MutableDisposable()
+
+  private qualityIndex: number | undefined
+  private quality: QualityWithName | undefined
+  private type: VideoType
+  private opts: NSPlayerOptions
+  private plugins: any
+  // 这么写是否有问题？？？？？？？？？？？？？？？？？？？？？
 
   constructor(private readonly opt: NSPlayerOptions = {}) {
     super(opt.emitter)
     this._register(this._disposableParentElement)
+    this.opts = { ...opt }
+    // this.plugins = {}
     if (document !== undefined) {
       this.video = this.initHTMLVideoElement()
       if (opt.el) {
@@ -39,7 +63,65 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       } else if (opt.selector) {
         this.container = document.querySelector(opt.selector)
       }
+
+      // if (options.video.quality) {
+      //     options.video.url = options.video.quality[options.video.defaultQuality].url;
+      // }
+
+      if (opt.source?.quality) {
+        this.qualityIndex = opt.source.defaultQuality
+        this.quality = opt.source.quality[this.qualityIndex ? this.qualityIndex : 0]
+        opt.source.src = this.quality?.url
+      }
+
+      if (opt.source && opt.source.src) {
+        this.video.src = opt.source.src
+      }
+      // console.log(this.quality?.type, opt.source?.type);
+      this.initPlayer((this.quality && this.quality.type) || opt.source?.type)
+      // console.log(opt.autoplay, 'ssssss')
+      if (opt.autoplay) {
+        // alert('kkk')
+        // this.video.autoplay = opt.autoplay
+        // setTimeout(() => {
+        //   this.video?.play()
+        // },2000)
+        // this.plays()
+        // this.video.play()
+      }
     }
+  }
+
+  protected readonly initPlayer = (type: VideoType) => {
+    this.initMSE(type)
+  }
+
+  protected readonly initMSE = (type: VideoType) => {
+    // console.log(type)
+    this.type = type
+    if (this.type === 'auto') {
+      const src = this.video?.src || ''
+      // 这么写是否合适？？？？？？？？？？？？？？？？
+
+      if (/m3u8(#|\?|$)/i.exec(src)) {
+        this.type = 'hls'
+      } else if (/.mpd(#|\?|$)/i.exec(src)) {
+        this.type = 'dash'
+      } else {
+        this.type = 'normal'
+      }
+    }
+    if (
+      this.type === 'hls' &&
+      this.video &&
+      (this.video.canPlayType('application/x-mpegURL') ||
+        this.video.canPlayType('application/vnd.apple.mpegURL'))
+    ) {
+      this.type = 'normal'
+    }
+    // console.log(this.type, 'aaaaa')
+
+    coreplayer(this.type, this.video, this.opts.pluginOptions, this._onReceivePlayList)
   }
 
   public requestFullscreen(options?: FullscreenOptions | undefined) {
@@ -67,9 +149,13 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   )
   public readonly onVideoDetached = this._onVideoDetached.event
 
+  // 这么写是否合适？？？？？？？？？？？？？？？？？？
+  protected readonly _onReceivePlayList = this._register(new Emitter<any[]>(this.opt.emitter))
+  public readonly onReceivePlayList = this._onReceivePlayList.event
+
   private initHTMLVideoElement() {
     const video = document.createElement('video')
-    video.controls = false
+    video.setAttribute('controls', 'controls')
     return video
   }
 
@@ -111,6 +197,21 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   get srcObject() {
     return this.video ? this.video.srcObject : null
   }
+
+  // plays() {
+  //   if (this.video) {
+  //     alert(1)
+  //     console.log(this.video)
+  //     this.video.play()
+  //     const playedPromise = Promise.resolve(this.video.play())
+  //     playedPromise
+  //       .catch(() => {
+  //         this.pause()
+  //       })
+  //       // eslint-disable-next-line @typescript-eslint/no-empty-function
+  //       .then(() => {})
+  //   }
+  // }
 
   // setProgressiveSources(sources: Source[]) {
   //   this._sources = sources

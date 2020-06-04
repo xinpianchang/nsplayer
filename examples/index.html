@@ -19,15 +19,60 @@
   </style>
 </head>
 <body>
-  <div class="container"></div>
-  <script src="../dist/index.umd.js"></script>
+  <!-- <video src="https://api.dogecloud.com/player/get.mp4?vcode=5ac682e6f8231991&userId=17&ext=.mp4" autoplay="autoplay"></video> -->
+  <div class="container">
+    <!-- <video autoplay controls preload="auto" src="https://api.dogecloud.com/player/get.mp4?vcode=5ac682e6f8231991&userId=17&ext=.mp4"></video> -->
+  </div>
+  <script src="/dist/index.umd.js"></script>
   <script>
+    // https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8
     const player = new NSPlayer({
-      selector: 'div.container'
+      selector: 'div.container',
+      source: {
+        src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8',
+        type: 'auto'
+      },
+      // preload: 'auto'
     })
-    player.setSource({
-      
+
+    // player.container = document.querySelector('div.container')
+    // player.
+    // player.autoplay = true
+    // player.play()
+    // setTimeout(() => player.play(), 5000)
+
+
+    player.onReceivePlayList(evt => {
+      console.log(evt)
+      // UI.make(['auto', '4K'])
     })
+
+    // player.onSeeked(evt => console.log(evt))
+
+
+    // evt.data: {
+    //   supportAuto: true,
+    //   size: 1,
+    //   list: [
+    //     type: 'progressive',
+    //     src: 'https://dsfafsdafsdafsdaf'
+    //   ]
+    // }
+
+    // player.setSource([
+    //   { type: 'progressive', mime: 'video/mp4', src: 'https://dddd.ma4', quality: 'Q720', fps: '29.976' },
+    //   { type: 'hls', mime: '', src: 'https://dddd.m3u8' }
+    // ])
+
+    // player.selectPlayListItem(id: string)
+
+    // player.setDefaultPolicy(policy: (playlist) => id)
+
+    // player.setAutoSelectPolicy(policy: (networkState, dxxxxx) => id)
+
+
+
+
   </script>
 </body>
 </html>

@@ -96,7 +96,7 @@ export function isSupportedMimeType(mimeType: string): mimeType is MimeType {
   return MimeTypes.indexOf(mimeType as MimeType) >= 0
 }
 
-export interface Source {
+export interface SegmentSource {
   quality?: Quality
   fps?: string
   width?: number
@@ -106,5 +106,22 @@ export interface Source {
   mime?: MimeType
 }
 
+export interface Source {
+  defaultQuality?: number
+  quality?: QualityWithName[]
+  src?: string
+  bitrate?: number
+  mime?: MimeType
+  type?: VideoType
+}
+
 // export interface PlayList {
 // }
+
+export interface QualityWithName {
+  name: string
+  url: string
+  type: VideoType
+}
+
+export type VideoType = 'hls' | 'dash' | 'auto' | 'normal' | undefined
