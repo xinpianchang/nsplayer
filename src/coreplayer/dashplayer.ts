@@ -1,17 +1,11 @@
 import { Disposable, toDisposable } from '../common/lifecycle'
 import { ICorePlayer, PlayList } from '.'
-import { Event } from '../common/event'
 import Dash from 'dash.js'
-
-console.log(Dash)
+import { Emitter } from '../common/event'
 
 export class DashPlayer extends Disposable implements ICorePlayer {
   private _dashPlayer: any
-  constructor(
-    private _video: HTMLVideoElement,
-    private _options: any = {},
-    private _onReceivePlayList: Event<PlayList>
-  ) {
+  constructor(private _video: HTMLVideoElement) {
     super()
     this._dashPlayer = Dash.MediaPlayer().create()
     this._register(
@@ -25,12 +19,11 @@ export class DashPlayer extends Disposable implements ICorePlayer {
   public init(src: string): void {
     const dashjsPlayer = this._dashPlayer
     const video = this._video
-    const options = this._options
 
     dashjsPlayer.initialize(video, src, false)
-    dashjsPlayer.updateSettings(options)
+    // dashjsPlayer.updateSettings(options)
     const STREAM_INITIALIZED = Dash.MediaPlayer.events.STREAM_INITIALIZED
-    const handler = (evt: any[]) => {
+    const handler = (evt: PlayList) => {
       console.log(dashjsPlayer.getBitrateInfoListFor('video'), 'xxxxx')
       this._onReceivePlayList.fire(evt)
     }
@@ -43,6 +36,6 @@ export class DashPlayer extends Disposable implements ICorePlayer {
     )
   }
 
-  // protected _onReceivePlayList = this._register(new Emitter<PlayList>())
-  // public onReceivePlayList = this._onReceivePlayList.event
+  protected _onReceivePlayList = this._register(new Emitter<PlayList>())
+  public onReceivePlayList = this._onReceivePlayList.event
 }
