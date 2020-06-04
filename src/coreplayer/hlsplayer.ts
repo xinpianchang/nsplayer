@@ -1,6 +1,6 @@
 import { Disposable, toDisposable } from '../common/lifecycle'
 import { ICorePlayer, PlayList } from '.'
-import { Emitter, Event } from '../common/event'
+import { Emitter } from '../common/event'
 import Hls from 'hls.js'
 
 // const STREAM_INITIALIZED = Dash.MediaPlayer.events.STREAM_INITIALIZED

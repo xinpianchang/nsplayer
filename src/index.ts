@@ -2,9 +2,10 @@
 // import 'core-js/fn/array.find'
 // ...
 import { BasePlayer } from './baseplayer'
-import { MutableDisposable, toDisposable } from './common/lifecycle'
+import { MutableDisposable, toDisposable, onDisposable } from './common/lifecycle'
 import { Emitter, EmitterOptions } from './common/event'
-import { Source } from './types'
+import { Source, getMimeType } from './types'
+import { ICorePlayer, createCorePlayer } from './coreplayer'
 // import { createCorePlayer } from './coreplayer'
 
 export interface NSPlayerOptions {
@@ -24,7 +25,7 @@ export interface IPlayer extends BasePlayer {
   readonly srcObject: MediaStream | MediaSource | Blob | null
 
   container: HTMLElement | null
-  // setSources(source: Source | Source[])
+  setSource(sources: Source | Source[]): void
 
   // onReceivePlayList: Event<PlayList>
 }
@@ -33,11 +34,9 @@ export interface IPlayer extends BasePlayer {
  * NSPlayer
  */
 export default class NSPlayer extends BasePlayer implements IPlayer {
-  // notice(arg0: string) {
-  //   throw new Error('Method not implemented.')
-  // }
   private _el: HTMLElement | null = null
   private _disposableParentElement = new MutableDisposable()
+  private _corePlayerRef = new MutableDisposable<ICorePlayer>()
 
   // private qualityIndex: number | undefined
   // private quality: QualityWithName | undefined
@@ -49,6 +48,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   constructor(private readonly opt: NSPlayerOptions = {}) {
     super(opt.emitter)
     this._register(this._disposableParentElement)
+    this._register(this._corePlayerRef)
 
     if (document !== undefined) {
       this.video = this.initHTMLVideoElement()
@@ -80,6 +80,10 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
         // this.video.play()
       }
     }
+  }
+
+  protected get corePlayer() {
+    return this._corePlayerRef.value
   }
 
   // protected readonly initMSE = (type: VideoType) => {
@@ -169,9 +173,9 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       el.appendChild(video)
       this._onVideoAttached.fire(video)
       return toDisposable(() => {
+        this._onVideoDetached.fire(video)
         el.removeEventListener('fullscreenchange', fullscreenChangeHandler)
         el.removeEventListener('fullscreenerror', fullscreenErrorHandler)
-        this._onVideoDetached.fire(video)
       })
     }
   }
@@ -184,9 +188,31 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     return this.video ? this.video.srcObject : null
   }
 
-  // set sources(sources: Source[]) {
+  public setSource(sources: Source | Source[]) {
+    if (!Array.isArray(sources)) {
+      this.setSource([sources])
+      return
+    }
 
-  // }
+    // policy to choose coreplayer
+    const source = sources[0]
+    const mime = source.mime ?? getMimeType(source.src)
+
+    if (mime) {
+      const corePlayer = createCorePlayer(mime, this.withVideo())
+      /**
+       * init coreplayer
+       */
+      onDisposable(corePlayer, () => {
+        // register something that should be called withinf corePlayer.dispose()
+        // corePlayer()
+      })
+
+      this._corePlayerRef.value = corePlayer
+    } else {
+      throw new Error('should provide the mime type')
+    }
+  }
 
   // plays() {
   //   if (this.video) {

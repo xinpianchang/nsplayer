@@ -16,6 +16,7 @@ export function createCorePlayer(mime: MimeType, video: HTMLVideoElement): ICore
   } else if (isDash(mime)) {
     return new DashPlayer(video)
   }
+
   throw new Error('unsupported mime type')
   // return DefaultPlayer(video)
 }

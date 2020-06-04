@@ -111,12 +111,22 @@ export function isDash(mimeType: string): mimeType is MimeTypeMap['mpd'][number]
   return MimeTypeMap.mpd.indexOf(mimeType as any) >= 0
 }
 
+export function getMimeType(src: string): MimeType | undefined {
+  const matched = src.match(/\.([^./\\]+)$/)
+  if (matched) {
+    const extension = matched[1].toLowerCase()
+    if (extension in MimeTypeMap) {
+      return MimeTypeMap[extension as Extension][0]
+    }
+  }
+}
+
 export interface Source {
+  src: string
   quality?: Quality
   fps?: string
   width?: number
   height?: number
-  src?: string
   bitrate?: number
   mime?: MimeType
 }
