@@ -1,1 +1,1 @@
-declare module 'dash.js'
+// declare module 'dash.js'

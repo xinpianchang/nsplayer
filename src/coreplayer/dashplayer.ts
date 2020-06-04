@@ -1,17 +1,24 @@
 import { Disposable, toDisposable } from '../common/lifecycle'
-import { ICorePlayer, PlayList } from '.'
-import Dash from 'dash.js'
+import { ICorePlayer, PlayList, createPlayList } from '.'
+import { MediaPlayer, MediaPlayerClass, MediaPlayerFactory } from 'dashjs'
 import { Emitter } from '../common/event'
 
 export class DashPlayer extends Disposable implements ICorePlayer {
-  private _dashPlayer: any
+  public static setDefaultMediaPlayerFactory(factory: MediaPlayerFactory) {
+    DashPlayer._mediaPlayerFactory = factory
+  }
+  public playList: PlayList = []
+
+  private static _mediaPlayerFactory = MediaPlayer()
+  private _dashPlayer: MediaPlayerClass
+
   constructor(private _video: HTMLVideoElement) {
     super()
-    this._dashPlayer = Dash.MediaPlayer().create()
+    this._dashPlayer = DashPlayer._mediaPlayerFactory.create()
     this._register(
       toDisposable(() => {
-        this._dashPlayer.destroy()
-        Dash.MediaPlayer().reset()
+        this._dashPlayer.reset()
+        // MediaPlayer().reset()
       })
     )
   }
@@ -22,10 +29,13 @@ export class DashPlayer extends Disposable implements ICorePlayer {
 
     dashjsPlayer.initialize(video, src, false)
     // dashjsPlayer.updateSettings(options)
-    const STREAM_INITIALIZED = Dash.MediaPlayer.events.STREAM_INITIALIZED
-    const handler = (evt: PlayList) => {
-      console.log(dashjsPlayer.getBitrateInfoListFor('video'), 'xxxxx')
-      this._onReceivePlayList.fire(evt)
+    const STREAM_INITIALIZED = MediaPlayer.events.STREAM_INITIALIZED
+    const handler = () => {
+      // console.log(dashjsPlayer.getBitrateInfoListFor('video'), 'xxxxx')
+      // this._onReceivePlayList.fire(evt)
+
+      this.playList = createPlayList(dashjsPlayer.getBitrateInfoListFor('video'))
+      this._onReceivePlayList.fire(this.playList)
     }
 
     dashjsPlayer.on(STREAM_INITIALIZED, handler, this)
@@ -34,6 +44,30 @@ export class DashPlayer extends Disposable implements ICorePlayer {
         dashjsPlayer.off(STREAM_INITIALIZED, handler, this)
       })
     )
+  }
+
+  public setQuality(key?: string): void {
+    const dashPlayer = this._dashPlayer
+    const index = this.playList.findIndex(item => item.key === key)
+    if (dashPlayer) {
+      const cfg = {
+        streaming: {
+          abr: {
+            autoSwitchBitrate: {
+              video: true,
+            },
+          },
+        },
+      }
+      if (index >= 0) {
+        cfg.streaming.abr.autoSwitchBitrate['video'] = false
+        dashPlayer.updateSettings(cfg)
+        dashPlayer.setQualityFor('video', index)
+      } else {
+        cfg.streaming.abr.autoSwitchBitrate['video'] = true
+        dashPlayer.updateSettings(cfg)
+      }
+    }
   }
 
   protected _onReceivePlayList = this._register(new Emitter<PlayList>())

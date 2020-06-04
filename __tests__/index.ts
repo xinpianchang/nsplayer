@@ -4,3 +4,7 @@ test('NSPlayer', () => {
   // const player = new NSPlayer()
   // expect(player).not.toBeNull()
 })
+
+const a = new NSPlayer({
+
+})

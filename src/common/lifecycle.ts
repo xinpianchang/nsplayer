@@ -94,7 +94,7 @@ export function toDisposable(fn: () => void): IDisposable {
   return self
 }
 
-export function onDisposable(disposable: IDisposable, fn: () => void): IDisposable {
+export function onDispose(disposable: IDisposable, fn: () => void): IDisposable {
   const dispose = disposable.dispose
   disposable.dispose = () => {
     dispose.call(disposable)

@@ -2,7 +2,7 @@
 // import 'core-js/fn/array.find'
 // ...
 import { BasePlayer } from './baseplayer'
-import { MutableDisposable, toDisposable, onDisposable } from './common/lifecycle'
+import { MutableDisposable, toDisposable, onDispose } from './common/lifecycle'
 import { Emitter, EmitterOptions } from './common/event'
 import { Source, getMimeType } from './types'
 import { ICorePlayer, createCorePlayer } from './coreplayer'
@@ -12,7 +12,7 @@ export interface NSPlayerOptions {
   el?: HTMLElement
   selector?: string
   emitter?: EmitterOptions
-  source?: Source
+  source?: Source | Source[]
   pluginOptions?: {
     hls: any
     dash: any
@@ -56,6 +56,9 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
         this.container = opt.el
       } else if (opt.selector) {
         this.container = document.querySelector(opt.selector)
+      }
+      if (opt.source) {
+        this.setSource(opt.source)
       }
 
       // if (opt.source?.quality) {
@@ -188,6 +191,11 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     return this.video ? this.video.srcObject : null
   }
 
+  public switchQuality(key?: string) {
+    const corePlayer = this._corePlayerRef.value
+    corePlayer?.setQuality(key)
+  }
+
   public setSource(sources: Source | Source[]) {
     if (!Array.isArray(sources)) {
       this.setSource([sources])
@@ -197,15 +205,27 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     // policy to choose coreplayer
     const source = sources[0]
     const mime = source.mime ?? getMimeType(source.src)
-
     if (mime) {
       const corePlayer = createCorePlayer(mime, this.withVideo())
+      // this._corePlayer = corePlayer
       /**
        * init coreplayer
        */
-      onDisposable(corePlayer, () => {
+      corePlayer.init(source.src)
+
+      const disposable = corePlayer.onReceivePlayList(evt => {
+        this._onReceivePlayList.fire(evt)
+        corePlayer.setQuality()
+
+        setTimeout(() => {
+          corePlayer.setQuality('rs=height-360#bitrate=200000')
+        }, 5000)
+      })
+
+      onDispose(corePlayer, () => {
         // register something that should be called withinf corePlayer.dispose()
         // corePlayer()
+        disposable.dispose()
       })
 
       this._corePlayerRef.value = corePlayer

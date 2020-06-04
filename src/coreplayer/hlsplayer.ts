@@ -1,5 +1,5 @@
 import { Disposable, toDisposable } from '../common/lifecycle'
-import { ICorePlayer, PlayList } from '.'
+import { ICorePlayer, PlayList, createPlayList } from '.'
 import { Emitter } from '../common/event'
 import Hls from 'hls.js'
 
@@ -7,11 +7,13 @@ import Hls from 'hls.js'
 
 export class HlsPlayer extends Disposable implements ICorePlayer {
   private _hlsPlayer?: Hls
+  public playList: PlayList = []
   constructor(private _video: HTMLVideoElement) {
     super()
     if (Hls.isSupported()) {
       const hlsPlayer = new Hls()
       this._hlsPlayer = hlsPlayer
+      // this.init(_video.src)
       this._register(toDisposable(() => hlsPlayer.destroy()))
     } else {
       // nothing
@@ -20,6 +22,7 @@ export class HlsPlayer extends Disposable implements ICorePlayer {
 
   public init(src: string): void {
     const hlsPlayer = this._hlsPlayer
+    // console.log(hlsPlayer)
     const video = this._video
 
     if (hlsPlayer) {
@@ -27,21 +30,26 @@ export class HlsPlayer extends Disposable implements ICorePlayer {
       hlsPlayer.attachMedia(video)
 
       const handler = () => {
-        this._onReceivePlayList.fire(hlsPlayer.levels)
-        console.log(hlsPlayer.levels)
+        this.playList = createPlayList(hlsPlayer.levels)
+        this._onReceivePlayList.fire(this.playList)
       }
+      // hlsPlayer.on(Hls.Events.LEVEL_LOADED, handler)
 
-      hlsPlayer.on(Hls.Events.LEVEL_LOADING, handler)
+      hlsPlayer.on(Hls.Events.MEDIA_ATTACHED, handler)
 
-      // dashjsPlayer.initialize(video, src, false)
-      // dashjsPlayer.updateSettings(options)
-
-      // dashjsPlayer.on(STREAM_INITIALIZED, handler, this)
       this._register(
         toDisposable(() => {
-          hlsPlayer.off(Hls.Events.LEVEL_LOADING, handler)
+          hlsPlayer.off(Hls.Events.LEVEL_LOADED, handler)
         })
       )
+    }
+  }
+
+  public setQuality(key?: string): void {
+    const hlsPlayer = this._hlsPlayer
+    const index = this.playList.findIndex(item => item.key === key)
+    if (hlsPlayer) {
+      hlsPlayer.currentLevel = index
     }
   }
 
