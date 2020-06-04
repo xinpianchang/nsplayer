@@ -87,41 +87,46 @@ export type MimeTypeMap = typeof MimeTypeMap
 export type Extension = keyof MimeTypeMap
 export type MimeType = MimeTypeMap[Extension][number]
 
+export type SupportedExtension = 'm3u8' | 'mpd' | 'mp4'
+export type SupportedMimeType = MimeTypeMap[SupportedExtension][number]
+export const SupportedMimeTypes = ([] as string[])
+  .concat(MimeTypeMap.m3u8)
+  .concat(MimeTypeMap.mpd)
+  .concat(MimeTypeMap.mp4) as SupportedMimeType[]
+
 export const MimeTypes = Object.values(MimeTypeMap).reduce(
   (arr, items) => arr.concat(items),
   [] as MimeType[]
 )
 
-export function isSupportedMimeType(mimeType: string): mimeType is MimeType {
-  return MimeTypes.indexOf(mimeType as MimeType) >= 0
+export function isSupportedMimeType(mimeType: string): mimeType is SupportedMimeType {
+  return SupportedMimeTypes.indexOf(mimeType as SupportedMimeType) >= 0
 }
 
-export interface SegmentSource {
+export function isHls(mimeType: string): mimeType is MimeTypeMap['m3u8'][number] {
+  return MimeTypeMap.m3u8.indexOf(mimeType as any) >= 0
+}
+
+export function isDash(mimeType: string): mimeType is MimeTypeMap['mpd'][number] {
+  return MimeTypeMap.mpd.indexOf(mimeType as any) >= 0
+}
+
+export function getMimeType(src: string): MimeType | undefined {
+  const matched = src.match(/\.([^./\\]+)$/)
+  if (matched) {
+    const extension = matched[1].toLowerCase()
+    if (extension in MimeTypeMap) {
+      return MimeTypeMap[extension as Extension][0]
+    }
+  }
+}
+
+export interface Source {
+  src: string
   quality?: Quality
   fps?: string
   width?: number
   height?: number
-  src?: string
   bitrate?: number
   mime?: MimeType
 }
-
-export interface Source {
-  defaultQuality?: number
-  quality?: QualityWithName[]
-  src?: string
-  bitrate?: number
-  mime?: MimeType
-  type?: VideoType
-}
-
-// export interface PlayList {
-// }
-
-export interface QualityWithName {
-  name: string
-  url: string
-  type: VideoType
-}
-
-export type VideoType = 'hls' | 'dash' | 'auto' | 'normal' | undefined
