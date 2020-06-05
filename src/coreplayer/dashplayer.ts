@@ -1,6 +1,6 @@
 import { Disposable, toDisposable } from '../common/lifecycle'
 import { ICorePlayer, PlayList, createPlayList } from '.'
-import { MediaPlayer, MediaPlayerClass, MediaPlayerFactory } from 'dashjs'
+import { MediaPlayer, MediaPlayerClass, MediaPlayerFactory, MediaPlayerSettingClass } from 'dashjs'
 import { Emitter } from '../common/event'
 
 export class DashPlayer extends Disposable implements ICorePlayer {
@@ -31,7 +31,11 @@ export class DashPlayer extends Disposable implements ICorePlayer {
     // dashjsPlayer.updateSettings(options)
     const STREAM_INITIALIZED = MediaPlayer.events.STREAM_INITIALIZED
     const handler = () => {
-      // console.log(dashjsPlayer.getBitrateInfoListFor('video'), 'xxxxx')
+      // console.log(
+      //   dashjsPlayer.getBitrateInfoListFor('video'),
+      //   dashjsPlayer.getBitrateInfoListFor('audio'),
+      //   'xxxxx'
+      // )
       // this._onReceivePlayList.fire(evt)
 
       this.playList = createPlayList(dashjsPlayer.getBitrateInfoListFor('video'))
@@ -50,21 +54,20 @@ export class DashPlayer extends Disposable implements ICorePlayer {
     const dashPlayer = this._dashPlayer
     const index = this.playList.findIndex(item => item.key === key)
     if (dashPlayer) {
-      const cfg = {
+      const cfg: MediaPlayerSettingClass = {
         streaming: {
           abr: {
             autoSwitchBitrate: {
-              video: true,
+              video: index < 0,
+              audio: true,
             },
           },
         },
       }
       if (index >= 0) {
-        cfg.streaming.abr.autoSwitchBitrate['video'] = false
         dashPlayer.updateSettings(cfg)
         dashPlayer.setQualityFor('video', index)
       } else {
-        cfg.streaming.abr.autoSwitchBitrate['video'] = true
         dashPlayer.updateSettings(cfg)
       }
     }

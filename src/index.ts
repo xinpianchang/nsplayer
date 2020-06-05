@@ -206,7 +206,8 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     const source = sources[0]
     const mime = source.mime ?? getMimeType(source.src)
     if (mime) {
-      const corePlayer = createCorePlayer(mime, this.withVideo())
+      const video = this.withVideo()
+      const corePlayer = createCorePlayer(mime, video, sources)
       // this._corePlayer = corePlayer
       /**
        * init coreplayer
@@ -215,11 +216,10 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
 
       const disposable = corePlayer.onReceivePlayList(evt => {
         this._onReceivePlayList.fire(evt)
-        corePlayer.setQuality()
-
-        setTimeout(() => {
-          corePlayer.setQuality('rs=height-360#bitrate=200000')
-        }, 5000)
+        // corePlayer.setQuality()
+        // setTimeout(() => {
+        //   corePlayer.setQuality('rs=height-360#bitrate=200000')
+        // }, 5000)
       })
 
       onDispose(corePlayer, () => {

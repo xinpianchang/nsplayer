@@ -111,6 +111,10 @@ export function isDash(mimeType: string): mimeType is MimeTypeMap['mpd'][number]
   return MimeTypeMap.mpd.indexOf(mimeType as any) >= 0
 }
 
+export function isMp4(mimeType: string): mimeType is MimeTypeMap['mp4'][number] {
+  return MimeTypeMap.mp4.indexOf(mimeType as any) >= 0
+}
+
 export function getMimeType(src: string): MimeType | undefined {
   const matched = src.match(/\.([^./\\]+)$/)
   if (matched) {
