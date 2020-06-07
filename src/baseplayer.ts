@@ -3,7 +3,6 @@ import { Disposable, MutableDisposable, combinedDisposable, IDisposable } from '
 import { Emitter, Event } from './common/event'
 import { BasePlayerWithEvent, VideoEventNameMap, VideoEventNameArray, isSafari } from './types'
 import { assert } from './common/functional'
-import { onUnexpectedError } from './common/errors'
 
 export interface NSPlayerOptions {
   el?: HTMLElement

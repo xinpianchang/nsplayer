@@ -2,7 +2,7 @@ import { IDisposable, Disposable, toDisposable } from '../common/lifecycle'
 // import { DashPlayer } from './dashplayer'
 // import { HlsPlayer } from './hlsplayer'
 // import { NormalPlayer } from './normalplayer'
-import { MimeType, isHls, isDash, Source, isMp4 } from '../types'
+import { MimeType, Source /*, isHls, isDash, isMp4*/ } from '../types'
 import { Event, Emitter } from '../common/event'
 
 export interface QualityLevel {

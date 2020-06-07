@@ -2,6 +2,7 @@ import commonjs from '@rollup/plugin-commonjs'
 import json from '@rollup/plugin-json'
 import resolve from '@rollup/plugin-node-resolve'
 import babel from '@rollup/plugin-babel'
+import builtins from 'rollup-plugin-node-builtins'
 import { terser } from 'rollup-plugin-terser'
 import pkg from './package.json'
 
@@ -23,14 +24,15 @@ export default [
     ],
     plugins: [
       json(),
-      resolve({ extensions }),
+      builtins(),
+      resolve({ extensions, browser: true }),
       commonjs(),
       babel({
         extensions,
         include: ['src/**/*'],
-        // babelHelpers: 'bundled',
+        babelHelpers: 'bundled',
       }),
-      // terser(),
+      terser(),
     ],
   },
   {
@@ -44,14 +46,15 @@ export default [
     ],
     plugins: [
       json(),
-      resolve({ extensions }),
+      builtins(),
+      resolve({ extensions, browser: true }),
       commonjs(),
       babel({
         extensions,
         include: ['src/**/*'],
         babelHelpers: 'bundled',
       }),
-      // terser(),
+      terser(),
     ],
   },
 ]
