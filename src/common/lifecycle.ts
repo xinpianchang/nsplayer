@@ -94,14 +94,19 @@ export function toDisposable(fn: () => void): IDisposable {
   return self
 }
 
-export function onDispose(disposable: IDisposable, fn: () => void): IDisposable {
+export function onDispose<T extends IDisposable>(disposable: T, fn: (this: T) => void): IDisposable {
   const dispose = disposable.dispose
+  let disposed = false
   disposable.dispose = () => {
-    dispose.call(disposable)
-    fn()
-    disposable.dispose = dispose
+    if (!disposed) {
+      disposed = true
+      dispose.call(disposable)
+      fn.call(disposable)
+    }
   }
-  return toDisposable(() => disposable.dispose = dispose)
+  return {
+    dispose: () => disposed = true
+  }
 }
 
 export class DisposableStore implements IDisposable {

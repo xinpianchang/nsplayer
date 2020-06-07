@@ -125,9 +125,14 @@ export function getMimeType(src: string): MimeType | undefined {
   }
 }
 
+export function isSafari() {
+  const chr = !!window.navigator.userAgent.match(/chrome/i)
+  const sfri = !!window.navigator.userAgent.match(/safari/i)
+  return !chr && sfri
+}
+
 export interface Source {
   src: string
-  quality?: Quality
   fps?: string
   width?: number
   height?: number

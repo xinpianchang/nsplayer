@@ -81,10 +81,11 @@
     "rimraf": "^3.0.2",
     "rollup": "^2.7.2",
     "rollup-plugin-terser": "^5.3.0",
-    "serve": "^11.3.1",
+    "serve": "^11.3.2",
     "typescript": "^3.8.3"
   },
   "dependencies": {
+    "@babel/runtime": "^7.10.2",
     "dashjs": "^3.1.1",
     "delegates": "^1.0.0",
     "hls.js": "^0.13.2"

@@ -28,9 +28,9 @@ export default [
       babel({
         extensions,
         include: ['src/**/*'],
-        babelHelpers: 'bundled',
+        // babelHelpers: 'bundled',
       }),
-      terser(),
+      // terser(),
     ],
   },
   {
@@ -51,7 +51,7 @@ export default [
         include: ['src/**/*'],
         babelHelpers: 'bundled',
       }),
-      terser(),
+      // terser(),
     ],
   },
 ]

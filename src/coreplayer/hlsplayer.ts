@@ -1,58 +1,143 @@
-import { Disposable, toDisposable } from '../common/lifecycle'
-import { ICorePlayer, PlayList, createPlayList } from '.'
-import { Emitter } from '../common/event'
 import Hls from 'hls.js'
+import { toDisposable, IDisposable, combinedDisposable } from '../common/lifecycle'
+import {
+  CorePlayer,
+  SourceWithMimeType,
+  isAutoQuality,
+  idToQualityLevel,
+  QualityLevel,
+  qualityLevelToId,
+} from '.'
+import { Event } from '../common/event'
+import { onUnexpectedError } from '../common/errors'
 
-// const STREAM_INITIALIZED = Dash.MediaPlayer.events.STREAM_INITIALIZED
+const supportMSE = Hls.isSupported()
 
-export class HlsPlayer extends Disposable implements ICorePlayer {
+export class HlsPlayer extends CorePlayer {
   private _hlsPlayer?: Hls
-  public playList: PlayList = []
-  constructor(private _video: HTMLVideoElement) {
-    super()
-    if (Hls.isSupported()) {
+
+  constructor(video: HTMLVideoElement, source: SourceWithMimeType) {
+    super(video, source)
+    if (supportMSE) {
       const hlsPlayer = new Hls()
       this._hlsPlayer = hlsPlayer
-      // this.init(_video.src)
       this._register(toDisposable(() => hlsPlayer.destroy()))
-    } else {
-      // nothing
     }
   }
 
-  public init(src: string): void {
-    const hlsPlayer = this._hlsPlayer
-    // console.log(hlsPlayer)
-    const video = this._video
+  protected translatePlayList() {
+    const levels = this.levels
+    return levels.map(level => this.hlsLevelToQuality(level))
+  }
 
-    if (hlsPlayer) {
-      hlsPlayer.loadSource(src)
-      hlsPlayer.attachMedia(video)
+  protected translateCurrentQuality() {
+    const level = this.currentLevel
+    if (level) {
+      return this.hlsLevelToQuality(level)
+    }
+  }
 
-      const handler = () => {
-        this.playList = createPlayList(hlsPlayer.levels)
-        this._onReceivePlayList.fire(this.playList)
+  private get levels() {
+    return this._hlsPlayer?.levels || []
+  }
+
+  private get currentLevel() {
+    return this._hlsPlayer?.levels[this._hlsPlayer?.currentLevel]
+  }
+
+  private findLevelById(id: string) {
+    const playLevel = idToQualityLevel(id)
+    const levels = this.levels
+    if (playLevel && levels.length) {
+      // bitrate match
+      let idx = levels.findIndex(level => level.bitrate, playLevel.bitrate)
+      if (idx >= 0) {
+        return idx
       }
-      // hlsPlayer.on(Hls.Events.LEVEL_LOADED, handler)
-
-      hlsPlayer.on(Hls.Events.MEDIA_ATTACHED, handler)
-
-      this._register(
-        toDisposable(() => {
-          hlsPlayer.off(Hls.Events.LEVEL_LOADED, handler)
-        })
-      )
+      // short side match
+      const shortSide = Math.min(playLevel.width, playLevel.height)
+      idx = levels.findIndex(level => Math.min(level.width, level.height) === shortSide)
+      if (idx >= 0) {
+        return idx
+      }
     }
+    return -1
   }
 
-  public setQuality(key?: string): void {
+  private hlsLevelToQuality(hlsLevel: Hls.Level): QualityLevel {
+    const level: { -readonly [k in keyof QualityLevel]: QualityLevel[k] } = {
+      bitrate: hlsLevel.bitrate,
+      width: hlsLevel.width,
+      height: hlsLevel.height,
+    }
+    if (hlsLevel.videoCodec) {
+      level.type = 'video'
+    }
+    return level
+  }
+
+  protected onInit(video: HTMLVideoElement, source: SourceWithMimeType) {
     const hlsPlayer = this._hlsPlayer
-    const index = this.playList.findIndex(item => item.key === key)
     if (hlsPlayer) {
-      hlsPlayer.currentLevel = index
+      hlsPlayer.attachMedia(video)
+      hlsPlayer.loadSource(source.src)
+
+      const disposables: IDisposable[] = []
+      const onManifestParsed = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.MANIFEST_PARSED)
+      // const onLevelsUpdated = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.LEVELS_UPDATED)
+      const onLevelSwitched = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.LEVEL_SWITCHED)
+
+      onManifestParsed(this.updatePlayList, this, disposables)
+      onManifestParsed(this.setReady, this, disposables)
+      onManifestParsed(() => video.autoplay && video.play())
+      onLevelSwitched(this.updateQualityLevel, this, disposables)
+
+      this._register(combinedDisposable(...disposables))
+    } else {
+      this.video.src = source.src
+      if (!this.video.canPlayType(source.mime)) {
+        onUnexpectedError(
+          new Error('hlsplayer src not supported: ' + source.src + ', mime: ' + source.mime)
+        )
+      }
+      this.updatePlayList()
     }
   }
 
-  protected _onReceivePlayList = this._register(new Emitter<PlayList>())
-  public onReceivePlayList = this._onReceivePlayList.event
+  public get name() {
+    return 'HLSPlayer'
+  }
+
+  public setQualityById(id: string): void {
+    const hlsPlayer = this._hlsPlayer
+    if (hlsPlayer) {
+      let nextLevel
+      if (isAutoQuality(id)) {
+        nextLevel = -1
+      } else {
+        nextLevel = this.findLevelById(id)
+      }
+      hlsPlayer.nextLevel = nextLevel
+    }
+  }
+
+  public get qualityId(): string {
+    if (this.currentLevel) {
+      return qualityLevelToId(this.hlsLevelToQuality(this.currentLevel))
+    } else {
+      return 'auto'
+    }
+  }
+
+  public get autoQuality(): boolean {
+    const hlsPlayer = this._hlsPlayer
+    if (hlsPlayer) {
+      return hlsPlayer.autoLevelEnabled
+    }
+    return true
+  }
+
+  public get supportAutoQuality(): boolean {
+    return true
+  }
 }

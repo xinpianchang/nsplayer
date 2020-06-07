@@ -19,7 +19,6 @@
   </style>
 </head>
 <body>
-  <!-- <video src="https://api.dogecloud.com/player/get.mp4?vcode=5ac682e6f8231991&userId=17&ext=.mp4" autoplay="autoplay"></video> -->
   <div class="container">
     <!-- <video autoplay controls preload="auto" src="https://api.dogecloud.com/player/get.mp4?vcode=5ac682e6f8231991&userId=17&ext=.mp4"></video> -->
   </div>
@@ -30,10 +29,16 @@
     // https://qiniu-xpc4.xpccdn.com/5ed504422a766.mp4
     const player = new NSPlayer({
       selector: 'div.container',
-      source: {
-        src: 'https://qiniu-xpc4.xpccdn.com/5ed504422a766.mp4',
-      },
-      // preload: 'auto'
+      source: [
+        {
+          src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8',
+        },
+        {
+          src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd',
+        }
+      ],
+      autoplay: true,
+      controls: true,
     })
 
     // player.container = document.querySelector('div.container')
@@ -42,9 +47,11 @@
     // player.play()
     // setTimeout(() => player.play(), 5000)
 
+    // player.onError(err => console.warn(err))
 
-    player.onReceivePlayList(evt => {
-      console.log(evt)
+    player.onPlayListChange(evt => {
+      console.log(...evt)
+      console.log('player name:', player.currentPlayerName)
       // UI.make(['auto', '4K'])
     })
 

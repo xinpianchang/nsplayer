@@ -1,33 +1,85 @@
 // Import here Polyfills if needed. Recommended core-js (npm i -D core-js)
 // import 'core-js/fn/array.find'
 // ...
+// import '@babel/runtime'
+
 import { BasePlayer } from './baseplayer'
-import { MutableDisposable, toDisposable, onDispose } from './common/lifecycle'
-import { Emitter, EmitterOptions } from './common/event'
-import { Source, getMimeType } from './types'
-import { ICorePlayer, createCorePlayer } from './coreplayer'
-// import { createCorePlayer } from './coreplayer'
+import {
+  MutableDisposable,
+  toDisposable,
+  onDispose,
+  IDisposable,
+  dispose,
+} from './common/lifecycle'
+import { Emitter, Event, Relay } from './common/event'
+import { Source, getMimeType, isHls, isDash, isMp4 } from './types'
+import {
+  ICorePlayer,
+  PlayList,
+  QualityLevel,
+  SourceWithMimeType,
+  qualityLevelToId,
+} from './coreplayer'
+import { SourcePolicy, DefaultSourcePolicy } from './policy/source'
+import { HlsPlayer } from './coreplayer/hlsplayer'
+import { DashPlayer } from './coreplayer/dashplayer'
 
 export interface NSPlayerOptions {
   el?: HTMLElement
   selector?: string
-  emitter?: EmitterOptions
   source?: Source | Source[]
-  pluginOptions?: {
-    hls: any
-    dash: any
-  }
   autoplay?: boolean
+  preload?: 'auto' | 'none' | 'metadata'
+  loop?: boolean
+  muted?: boolean
+  volume?: number
+  controls?: boolean
 }
 
 export interface IPlayer extends BasePlayer {
   readonly src: string
   readonly srcObject: MediaStream | MediaSource | Blob | null
-
+  readonly currentPlayerName: string | undefined
+  readonly currentQualityId: string
+  readonly currentPlayList: PlayList
   container: HTMLElement | null
+  sourcePolicy: SourcePolicy
+
+  /** 提供所有可供播放的资源，请尽量提供 mime type 以及 src */
   setSource(sources: Source | Source[]): void
 
-  // onReceivePlayList: Event<PlayList>
+  /** 根据 id 请求播放质量，auto 表示自动，id 在各类核心播放器之间通用 */
+  requestQualityById(id: string): void
+
+  /** 根据 PlayList 数组的下标请求播放质量，-1 则表示自动 */
+  requestQualityByIndex(index: number): void
+
+  readonly onFullscreenChange: Event<void>
+  readonly onFullscreenError: Event<void>
+  readonly onVideoAttach: Event<HTMLVideoElement>
+  readonly onVideoDetach: Event<HTMLVideoElement>
+  readonly onQualityChange: Event<QualityLevel>
+  readonly onPlayListChange: Event<PlayList>
+  readonly onQualityRequest: Event<string>
+}
+
+function createCorePlayer(
+  source: SourceWithMimeType,
+  video: HTMLVideoElement,
+  sources?: Source[]
+): ICorePlayer {
+  if (isHls(source.mime)) {
+    return new HlsPlayer(video, source)
+  } else if (isDash(source.mime)) {
+    return new DashPlayer(video, source)
+  } else if (isMp4(source.mime)) {
+    if (sources) {
+      // return new NormalPlayer(video, sources)
+    } else {
+      throw new Error('none video sources')
+    }
+  }
+  throw new Error('unsupported mime type')
 }
 
 /**
@@ -37,16 +89,33 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   private _el: HTMLElement | null = null
   private _disposableParentElement = new MutableDisposable()
   private _corePlayerRef = new MutableDisposable<ICorePlayer>()
+  private _sources: Source[] = []
+  private _requestedQualityId = 'auto'
+  private _sourcePolicy = DefaultSourcePolicy
 
-  // private qualityIndex: number | undefined
-  // private quality: QualityWithName | undefined
-  // private type: VideoType
-  // private opts: NSPlayerOptions
-  // private plugins: any
-  // 这么写是否有问题？？？？？？？？？？？？？？？？？？？？？
+  protected readonly _onFullscreenChange = this._register(new Emitter<void>())
+  public readonly onFullscreenChange = this._onFullscreenChange.event
 
-  constructor(private readonly opt: NSPlayerOptions = {}) {
-    super(opt.emitter)
+  protected readonly _onFullscreenError = this._register(new Emitter<void>())
+  public readonly onFullscreenError = this._onFullscreenError.event
+
+  protected readonly _onVideoAttach = this._register(new Emitter<HTMLVideoElement>())
+  public readonly onVideoAttach = this._onVideoAttach.event
+
+  protected readonly _onVideoDetach = this._register(new Emitter<HTMLVideoElement>())
+  public readonly onVideoDetach = this._onVideoDetach.event
+
+  protected readonly _onQualityChange = this._register(new Relay<QualityLevel>())
+  public readonly onQualityChange = this._onQualityChange.event
+
+  protected readonly _onPlayListChange = this._register(new Relay<PlayList>())
+  public readonly onPlayListChange = this._onPlayListChange.event
+
+  protected readonly _onQualityRequest = this._register(new Emitter<string>())
+  public readonly onQualityRequest = this._onQualityRequest.event
+
+  constructor(readonly opt: NSPlayerOptions = {}) {
+    super()
     this._register(this._disposableParentElement)
     this._register(this._corePlayerRef)
 
@@ -57,65 +126,45 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       } else if (opt.selector) {
         this.container = document.querySelector(opt.selector)
       }
-      if (opt.source) {
-        this.setSource(opt.source)
+
+      if (opt.autoplay) {
+        this.autoplay = opt.autoplay
       }
 
-      // if (opt.source?.quality) {
-      //   this.qualityIndex = opt.source.defaultQuality
-      //   this.quality = opt.source.quality[this.qualityIndex ? this.qualityIndex : 0]
-      //   opt.source.src = this.quality?.url
-      // }
+      if (opt.preload) {
+        this.preload = opt.preload
+      }
 
-      // if (opt.source && opt.source.src) {
-      //   this.video.src = opt.source.src
-      // }
-      // console.log(this.quality?.type, opt.source?.type);
-      // this.initPlayer((this.quality && this.quality.type) || opt.source?.type)
-      // console.log(opt.autoplay, 'ssssss')
-      if (opt.autoplay) {
-        // alert('kkk')
-        // this.video.autoplay = opt.autoplay
-        // setTimeout(() => {
-        //   this.video?.play()
-        // },2000)
-        // this.plays()
-        // this.video.play()
+      if (opt.loop) {
+        this.loop = opt.loop
+      }
+
+      if (opt.muted) {
+        this.muted = opt.muted
+      }
+
+      if (opt.volume) {
+        this.volume = opt.volume
+      }
+
+      if (opt.controls) {
+        this.controls = opt.controls
+      }
+
+      if (opt.source) {
+        this.setSource(opt.source)
       }
     }
   }
 
+  /** 根据当前的 source 形态获取底层的 CorePlayer，可能为 undefined */
   protected get corePlayer() {
     return this._corePlayerRef.value
   }
 
-  // protected readonly initMSE = (type: VideoType) => {
-  //   // console.log(type)
-  //   this.type = type
-  //   if (this.type === 'auto') {
-  //     const src = this.video?.src || ''
-  //     // 这么写是否合适？？？？？？？？？？？？？？？？
-
-  //     if (/m3u8(#|\?|$)/i.exec(src)) {
-  //       this.type = 'hls'
-  //     } else if (/.mpd(#|\?|$)/i.exec(src)) {
-  //       this.type = 'dash'
-  //     } else {
-  //       this.type = 'normal'
-  //     }
-  //   }
-  //   if (
-  //     this.type === 'hls' &&
-  //     this.video &&
-  //     (this.video.canPlayType('application/x-mpegURL') ||
-  //       this.video.canPlayType('application/vnd.apple.mpegURL'))
-  //   ) {
-  //     this.type = 'normal'
-  //   }
-  //   // console.log(this.type, 'aaaaa')
-
-  //   coreplayer(this.type, this.video, this.opts.pluginOptions, this._onReceivePlayList)
-  // }
+  public get currentPlayerName() {
+    return this._corePlayerRef.value?.name
+  }
 
   public requestFullscreen(options?: FullscreenOptions | undefined) {
     if (this._el) {
@@ -126,29 +175,9 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     return Promise.reject(error)
   }
 
-  protected readonly _onFullscreenChange = this._register(new Emitter<void>(this.opt.emitter))
-  public readonly onFullscreenChange = this._onFullscreenChange.event
-
-  protected readonly _onFullscreenError = this._register(new Emitter<void>(this.opt.emitter))
-  public readonly onFullscreenError = this._onFullscreenError.event
-
-  protected readonly _onVideoAttached = this._register(
-    new Emitter<HTMLVideoElement>(this.opt.emitter)
-  )
-  public readonly onVideoAttached = this._onVideoAttached.event
-
-  protected readonly _onVideoDetached = this._register(
-    new Emitter<HTMLVideoElement>(this.opt.emitter)
-  )
-  public readonly onVideoDetached = this._onVideoDetached.event
-
-  // 这么写是否合适？？？？？？？？？？？？？？？？？？
-  protected readonly _onReceivePlayList = this._register(new Emitter<any[]>(this.opt.emitter))
-  public readonly onReceivePlayList = this._onReceivePlayList.event
-
   private initHTMLVideoElement() {
     const video = document.createElement('video')
-    video.setAttribute('controls', 'controls')
+    video.controls = false
     return video
   }
 
@@ -164,36 +193,74 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     return this._el
   }
 
+  set sourcePolicy(sourcePolicy: SourcePolicy) {
+    if (this._sourcePolicy !== sourcePolicy) {
+      this._sourcePolicy = sourcePolicy
+      this.setSource(this._sources)
+    }
+  }
+
+  get sourcePolicy() {
+    return this._sourcePolicy
+  }
+
   private _registerContainerListeners(el: HTMLElement | null) {
     this._el = el
     const video = this.withVideo()
     if (el) {
       const fullscreenChangeHandler = () => this._onFullscreenChange.fire()
       const fullscreenErrorHandler = () => this._onFullscreenError.fire()
-      el.addEventListener('fullscreenchange', fullscreenChangeHandler)
-      el.addEventListener('fullscreenerror', fullscreenErrorHandler)
+      const detachVideoHandler = () => this._onVideoDetach.fire(video)
+      const onFullscreenChange = Event.fromDOMEventEmitter(el, 'fullscreenchange')
+      const onFullscreenError = Event.fromDOMEventEmitter(el, 'fullscreenerror')
+      const disposables: IDisposable[] = []
+
       el.innerHTML = ''
       el.appendChild(video)
-      this._onVideoAttached.fire(video)
+
+      onFullscreenChange(fullscreenChangeHandler, null, disposables)
+      onFullscreenError(fullscreenErrorHandler, null, disposables)
+      this._onVideoAttach.fire(video)
+
       return toDisposable(() => {
-        this._onVideoDetached.fire(video)
-        el.removeEventListener('fullscreenchange', fullscreenChangeHandler)
-        el.removeEventListener('fullscreenerror', fullscreenErrorHandler)
+        detachVideoHandler()
+        dispose(disposables)
       })
     }
   }
 
-  get src() {
+  public get src() {
     return this.video ? this.video.src : ''
   }
 
-  get srcObject() {
+  public get srcObject() {
     return this.video ? this.video.srcObject : null
   }
 
-  public switchQuality(key?: string) {
-    const corePlayer = this._corePlayerRef.value
-    corePlayer?.setQuality(key)
+  public get currentQualityId() {
+    return this._corePlayerRef.value?.qualityId || this._requestedQualityId
+  }
+
+  public get currentPlayList() {
+    return this._corePlayerRef.value?.playList || []
+  }
+
+  public requestQualityById(id: string) {
+    if (this._requestedQualityId !== id) {
+      this._requestedQualityId = id
+      this._onQualityRequest.fire(id)
+    }
+  }
+
+  public requestQualityByIndex(index: number) {
+    if (index === -1) {
+      this.requestQualityById('auto')
+    } else if (index < this.currentPlayList.length) {
+      const qualityLevel = this.currentPlayList[index]
+      this.requestQualityById(qualityLevelToId(qualityLevel))
+    } else {
+      console.warn('there is no such quality index, please use quality id instead')
+    }
   }
 
   public setSource(sources: Source | Source[]) {
@@ -202,55 +269,33 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       return
     }
 
+    this._sources = sources
+
     // policy to choose coreplayer
-    const source = sources[0]
+    const source = this._sourcePolicy(sources)
+
     const mime = source.mime ?? getMimeType(source.src)
     if (mime) {
       const video = this.withVideo()
-      const corePlayer = createCorePlayer(mime, video, sources)
-      // this._corePlayer = corePlayer
-      /**
-       * init coreplayer
-       */
-      corePlayer.init(source.src)
+      const corePlayer = createCorePlayer(source, video, sources)
+      const disposables: IDisposable[] = []
 
-      const disposable = corePlayer.onReceivePlayList(evt => {
-        this._onReceivePlayList.fire(evt)
-        // corePlayer.setQuality()
-        // setTimeout(() => {
-        //   corePlayer.setQuality('rs=height-360#bitrate=200000')
-        // }, 5000)
-      })
+      this._onPlayListChange.input = corePlayer.onPlayListChange
+      this._onQualityChange.input = corePlayer.onQualityChange
 
-      onDispose(corePlayer, () => {
-        // register something that should be called withinf corePlayer.dispose()
-        // corePlayer()
-        disposable.dispose()
-      })
+      corePlayer.onReady(
+        () => corePlayer.setQualityById(this._requestedQualityId),
+        null,
+        disposables
+      )
+
+      this.onQualityRequest(corePlayer.setQualityById, corePlayer, disposables)
+
+      onDispose(corePlayer, () => dispose(disposables))
 
       this._corePlayerRef.value = corePlayer
     } else {
       throw new Error('should provide the mime type')
     }
   }
-
-  // plays() {
-  //   if (this.video) {
-  //     alert(1)
-  //     console.log(this.video)
-  //     this.video.play()
-  //     const playedPromise = Promise.resolve(this.video.play())
-  //     playedPromise
-  //       .catch(() => {
-  //         this.pause()
-  //       })
-  //       // eslint-disable-next-line @typescript-eslint/no-empty-function
-  //       .then(() => {})
-  //   }
-  // }
-
-  // setProgressiveSources(sources: Source[]) {
-  //   this._sources = sources
-  //   this.withVideo().src = sources[0].src || ''
-  // }
 }

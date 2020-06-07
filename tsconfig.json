@@ -13,6 +13,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "skipLibCheck": true,
     "lib": ["DOM", "ES2015"]
   },
   "exclude": ["node_modules", "dist"],
