@@ -22,8 +22,9 @@
   <div class="container">
     <!-- <video autoplay controls preload="auto" src="https://api.dogecloud.com/player/get.mp4?vcode=5ac682e6f8231991&userId=17&ext=.mp4"></video> -->
   </div>
-  <script src="../dist/index.umd.js"></script>
-  <script>
+  <!-- <script src="../dist/index.umd.js"></script> -->
+  <script type="module">
+    import NSPlayer from '../dist/esm/index.js'
     // https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd
     // https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8
     // https://qiniu-xpc4.xpccdn.com/5ed504422a766.mp4
@@ -37,7 +38,7 @@
           src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd',
         }
       ],
-      autoplay: true,
+      // autoplay: true,
       controls: true,
     })
 

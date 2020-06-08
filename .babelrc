@@ -1,5 +1,15 @@
 {
-  "presets": ["@babel/env", "@babel/typescript"],
+  "presets": [
+    ["@babel/env", {
+      "targets": {
+        "esmodules": true
+      },
+      "bugfixes": true,
+      "loose": true,
+      "modules": false
+    }],
+    "@babel/typescript"
+  ],
   "plugins": [
     ["@babel/plugin-transform-typescript", {
       "allowNamespaces": true

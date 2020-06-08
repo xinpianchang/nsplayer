@@ -12,17 +12,10 @@ import {
   dispose,
 } from './common/lifecycle'
 import { Emitter, Event, Relay } from './common/event'
-import { Source, getMimeType, isHls, isDash, isMp4 } from './types'
-import {
-  ICorePlayer,
-  PlayList,
-  QualityLevel,
-  SourceWithMimeType,
-  qualityLevelToId,
-} from './coreplayer'
+import { Source, getMimeType } from './types'
+import { ICorePlayer, PlayList, QualityLevel, qualityLevelToId } from './coreplayer'
 import { SourcePolicy, DefaultSourcePolicy } from './policy/source'
-import { HlsPlayer } from './coreplayer/hlsplayer'
-import { DashPlayer } from './coreplayer/dashplayer'
+import createCorePlayer from './createPlayer'
 
 export interface NSPlayerOptions {
   el?: HTMLElement
@@ -61,25 +54,6 @@ export interface IPlayer extends BasePlayer {
   readonly onQualityChange: Event<QualityLevel>
   readonly onPlayListChange: Event<PlayList>
   readonly onQualityRequest: Event<string>
-}
-
-function createCorePlayer(
-  source: SourceWithMimeType,
-  video: HTMLVideoElement,
-  sources?: Source[]
-): ICorePlayer {
-  if (isHls(source.mime)) {
-    return new HlsPlayer(video, source)
-  } else if (isDash(source.mime)) {
-    return new DashPlayer(video, source)
-  } else if (isMp4(source.mime)) {
-    if (sources) {
-      // return new NormalPlayer(video, sources)
-    } else {
-      throw new Error('none video sources')
-    }
-  }
-  throw new Error('unsupported mime type')
 }
 
 /**
@@ -277,23 +251,26 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     const mime = source.mime ?? getMimeType(source.src)
     if (mime) {
       const video = this.withVideo()
-      const corePlayer = createCorePlayer(source, video, sources)
-      const disposables: IDisposable[] = []
+      createCorePlayer(source, video, sources)
+        .then(corePlayer => {
+          const disposables: IDisposable[] = []
 
-      this._onPlayListChange.input = corePlayer.onPlayListChange
-      this._onQualityChange.input = corePlayer.onQualityChange
+          this._onPlayListChange.input = corePlayer.onPlayListChange
+          this._onQualityChange.input = corePlayer.onQualityChange
 
-      corePlayer.onReady(
-        () => corePlayer.setQualityById(this._requestedQualityId),
-        null,
-        disposables
-      )
+          corePlayer.onReady(
+            () => corePlayer.setQualityById(this._requestedQualityId),
+            null,
+            disposables
+          )
 
-      this.onQualityRequest(corePlayer.setQualityById, corePlayer, disposables)
+          this.onQualityRequest(corePlayer.setQualityById, corePlayer, disposables)
 
-      onDispose(corePlayer, () => dispose(disposables))
+          onDispose(corePlayer, () => dispose(disposables))
 
-      this._corePlayerRef.value = corePlayer
+          this._corePlayerRef.value = corePlayer
+        })
+        .catch(err => console.warn(err))
     } else {
       throw new Error('should provide the mime type')
     }

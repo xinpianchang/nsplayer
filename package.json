@@ -7,9 +7,8 @@
   ],
   "license": "MIT",
   "author": "tangye <tangye@xinpainchang.com>",
-  "main": "dist/index.cjs.js",
-  "module": "dist/index.esm.js",
-  "browser": "dist/index.umd.js",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "files": [
     "dist"
@@ -55,6 +54,7 @@
     ]
   },
   "devDependencies": {
+    "@babel/cli": "^7.10.1",
     "@babel/core": "^7.9.0",
     "@babel/plugin-proposal-class-properties": "^7.10.1",
     "@babel/plugin-transform-typescript": "^7.10.1",
@@ -87,8 +87,10 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
+    "delegates": "^1.0.0"
+  },
+  "peerDependencies": {
     "dashjs": "^3.1.1",
-    "delegates": "^1.0.0",
     "hls.js": "^0.13.2"
   }
 }
