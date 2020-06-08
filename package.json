@@ -87,7 +87,9 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "delegates": "^1.0.0"
+    "dashjs": "^3.1.1",
+    "delegates": "^1.0.0",
+    "hls.js": "^0.13.2"
   },
   "peerDependencies": {
     "dashjs": "^3.1.1",
