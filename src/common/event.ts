@@ -409,9 +409,9 @@ export namespace Event {
   }
 
   export interface NodeEventEmitter {
-    on(event: string | symbol, listener: Function): this
+    on(event: string | symbol, listener: Function): any
 
-    removeListener(event: string | symbol, listener: Function): this
+    off(event: string | symbol, listener: Function): any
   }
 
   export function fromNodeEventEmitter<T>(
@@ -421,7 +421,7 @@ export namespace Event {
   ): Event<T> {
     const fn = (...args: any[]) => result.fire(map(...args))
     const onFirstListenerAdd = () => emitter.on(eventName, fn)
-    const onLastListenerRemove = () => emitter.removeListener(eventName, fn)
+    const onLastListenerRemove = () => emitter.off(eventName, fn)
     const result = new Emitter<T>({ onFirstListenerAdd, onLastListenerRemove })
 
     return result.event

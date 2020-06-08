@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width" />
+  <title>NSPlayer Test Page</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+    }
+    div.container {
+      width: 100vw;
+      height: 100vh;
+    }
+    div.container video {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- <video autoplay controls preload="auto" src="https://api.dogecloud.com/player/get.mp4?vcode=5ac682e6f8231991&userId=17&ext=.mp4"></video> -->
+  </div>
+  <!-- <script src="../dist/index.umd.js"></script> -->
+  <script type="module">
+    import NSPlayer from '../dist/esm/index.js'
+    // https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd
+    // https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8
+    // https://qiniu-xpc4.xpccdn.com/5ed504422a766.mp4
+    const player = new NSPlayer({
+      selector: 'div.container',
+      source: [
+        {
+          src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8',
+        },
+        {
+          src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd',
+        }
+      ],
+      // autoplay: true,
+      controls: true,
+    })
+
+    // player.container = document.querySelector('div.container')
+    // player.
+    // player.autoplay = true
+    // player.play()
+    // setTimeout(() => player.play(), 5000)
+
+    // player.onError(err => console.warn(err))
+
+    player.onPlayListChange(evt => {
+      console.log(...evt)
+      console.log('player name:', player.currentPlayerName)
+      // UI.make(['auto', '4K'])
+    })
+
+    // player.onSeeked(evt => console.log(evt))
+
+
+    // evt.data: {
+    //   supportAuto: true,
+    //   size: 1,
+    //   list: [
+    //     type: 'progressive',
+    //     src: 'https://dsfafsdafsdafsdaf'
+    //   ]
+    // }
+
+    // player.setSource([
+    //   { type: 'progressive', mime: 'video/mp4', src: 'https://dddd.ma4', quality: 'Q720', fps: '29.976' },
+    //   { type: 'hls', mime: '', src: 'https://dddd.m3u8' }
+    // ])
+
+    // player.selectPlayListItem(id: string)
+
+    // player.setDefaultPolicy(policy: (playlist) => id)
+
+    // player.setAutoSelectPolicy(policy: (networkState, dxxxxx) => id)
+
+
+
+
+  </script>
+</body>
+</html>

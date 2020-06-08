@@ -7,9 +7,8 @@
   ],
   "license": "MIT",
   "author": "tangye <tangye@xinpainchang.com>",
-  "main": "dist/index.cjs.js",
-  "module": "dist/index.esm.js",
-  "browser": "dist/index.umd.js",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "files": [
     "dist"
@@ -55,6 +54,7 @@
     ]
   },
   "devDependencies": {
+    "@babel/cli": "^7.10.1",
     "@babel/core": "^7.9.0",
     "@babel/plugin-proposal-class-properties": "^7.10.1",
     "@babel/plugin-transform-typescript": "^7.10.1",
@@ -66,7 +66,9 @@
     "@rollup/plugin-commonjs": "^11.1.0",
     "@rollup/plugin-json": "^4.0.3",
     "@rollup/plugin-node-resolve": "^7.1.3",
+    "@types/hls.js": "^0.12.6",
     "@types/jest": "^25.2.1",
+    "@types/rollup-plugin-node-builtins": "^2.1.1",
     "@typescript-eslint/eslint-plugin": "^2.29.0",
     "@typescript-eslint/parser": "^2.29.0",
     "eslint": "^6.8.0",
@@ -79,10 +81,18 @@
     "prettier": "^2.0.5",
     "rimraf": "^3.0.2",
     "rollup": "^2.7.2",
+    "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-terser": "^5.3.0",
+    "serve": "^11.3.2",
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "delegates": "^1.0.0"
+    "dashjs": "^3.1.1",
+    "delegates": "^1.0.0",
+    "hls.js": "^0.13.2"
+  },
+  "peerDependencies": {
+    "dashjs": "^3.1.1",
+    "hls.js": "^0.13.2"
   }
 }

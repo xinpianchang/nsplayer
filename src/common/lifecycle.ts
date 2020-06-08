@@ -94,6 +94,21 @@ export function toDisposable(fn: () => void): IDisposable {
   return self
 }
 
+export function onDispose<T extends IDisposable>(disposable: T, fn: (this: T) => void): IDisposable {
+  const dispose = disposable.dispose
+  let disposed = false
+  disposable.dispose = () => {
+    if (!disposed) {
+      disposed = true
+      dispose.call(disposable)
+      fn.call(disposable)
+    }
+  }
+  return {
+    dispose: () => disposed = true
+  }
+}
+
 export class DisposableStore implements IDisposable {
   private _toDispose = new Set<IDisposable>()
   private _isDisposed = false

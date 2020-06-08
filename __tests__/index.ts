@@ -1,4 +1,4 @@
-import NSPlayer from '../src'
+// import NSPlayer from '../src'
 
 test('NSPlayer', () => {
   // const player = new NSPlayer()
