@@ -4,16 +4,18 @@
 // import '@babel/runtime'
 
 import { BasePlayer } from './baseplayer'
-import {
-  MutableDisposable,
-  toDisposable,
-  onDispose,
-  IDisposable,
-  dispose,
-} from './common/lifecycle'
-import { Emitter, Event, Relay } from './common/event'
+import { MutableDisposable, toDisposable, IDisposable, dispose } from './common/lifecycle'
+import { Emitter, Event, Relay, PauseableEmitter } from './common/event'
 import { Source, getMimeType } from './types'
-import { ICorePlayer, PlayList, QualityLevel, qualityLevelToId } from './coreplayer'
+import {
+  ICorePlayer,
+  PlayList,
+  QualityLevel,
+  qualityLevelToId,
+  idToQualityLevel,
+  isAutoQuality,
+  isSameLevel,
+} from './coreplayer'
 import { SourcePolicy, DefaultSourcePolicy } from './policy/source'
 import createCorePlayer from './createPlayer'
 
@@ -27,6 +29,7 @@ export interface NSPlayerOptions {
   muted?: boolean
   volume?: number
   controls?: boolean
+  abrFastSwitch?: boolean
 }
 
 export interface IPlayer extends BasePlayer {
@@ -35,6 +38,8 @@ export interface IPlayer extends BasePlayer {
   readonly currentPlayerName: string | undefined
   readonly currentQualityId: string
   readonly currentPlayList: PlayList
+  readonly requestedQualityId: string
+  readonly isAutoQuality: boolean
   container: HTMLElement | null
   sourcePolicy: SourcePolicy
 
@@ -51,6 +56,7 @@ export interface IPlayer extends BasePlayer {
   readonly onFullscreenError: Event<void>
   readonly onVideoAttach: Event<HTMLVideoElement>
   readonly onVideoDetach: Event<HTMLVideoElement>
+  readonly onQualitySwitchStart: Event<QualityLevel>
   readonly onQualityChange: Event<QualityLevel>
   readonly onPlayListChange: Event<PlayList>
   readonly onQualityRequest: Event<string>
@@ -60,12 +66,19 @@ export interface IPlayer extends BasePlayer {
  * NSPlayer
  */
 export default class NSPlayer extends BasePlayer implements IPlayer {
+  public static readonly qualityLevelToId = qualityLevelToId
+  public static readonly idToQualityLevel = idToQualityLevel
+  public static readonly isAutoQuality = isAutoQuality
+  public static readonly isSameLevel = isSameLevel
+
   private _el: HTMLElement | null = null
   private _disposableParentElement = new MutableDisposable()
+  private _delayQualitySwitchRequest = new MutableDisposable()
   private _corePlayerRef = new MutableDisposable<ICorePlayer>()
   private _sources: Source[] = []
   private _requestedQualityId = 'auto'
   private _sourcePolicy = DefaultSourcePolicy
+  private _abrFastSwitch = false
 
   protected readonly _onFullscreenChange = this._register(new Emitter<void>())
   public readonly onFullscreenChange = this._onFullscreenChange.event
@@ -88,10 +101,27 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   protected readonly _onQualityRequest = this._register(new Emitter<string>())
   public readonly onQualityRequest = this._onQualityRequest.event
 
+  protected readonly _onQualitySwitchStart = this._register(
+    new PauseableEmitter<QualityLevel>({
+      merge: levels => levels[levels.length - 1],
+    })
+  )
+  public readonly onQualitySwitchStart = Event.filter(
+    this._onQualitySwitchStart.event,
+    qualityLevel => {
+      const currentQualityLevel = idToQualityLevel(this.currentQualityId)
+      return !isSameLevel(qualityLevel, currentQualityLevel)
+    }
+  )
+
   constructor(readonly opt: NSPlayerOptions = {}) {
     super()
     this._register(this._disposableParentElement)
+    this._register(this._delayQualitySwitchRequest)
     this._register(this._corePlayerRef)
+    this._register(this.onPause(this._onQualitySwitchStart.pause, this._onQualitySwitchStart))
+    this._register(this.onPlay(this._onQualitySwitchStart.resume, this._onQualitySwitchStart))
+    this._onQualitySwitchStart.pause()
 
     if (document !== undefined) {
       this.video = this.initHTMLVideoElement()
@@ -125,6 +155,10 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
         this.controls = opt.controls
       }
 
+      if (opt.abrFastSwitch) {
+        this._abrFastSwitch = true
+      }
+
       if (opt.source) {
         this.setSource(opt.source)
       }
@@ -137,7 +171,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   }
 
   public get currentPlayerName() {
-    return this._corePlayerRef.value?.name
+    return this.corePlayer?.name
   }
 
   public requestFullscreen(options?: FullscreenOptions | undefined) {
@@ -155,7 +189,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     return video
   }
 
-  set container(el: HTMLElement | null) {
+  public set container(el: HTMLElement | null) {
     if (this._el === el) {
       return
     }
@@ -163,18 +197,18 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     this._disposableParentElement.value = this._registerContainerListeners(el)
   }
 
-  get container() {
+  public get container() {
     return this._el
   }
 
-  set sourcePolicy(sourcePolicy: SourcePolicy) {
+  public set sourcePolicy(sourcePolicy: SourcePolicy) {
     if (this._sourcePolicy !== sourcePolicy) {
       this._sourcePolicy = sourcePolicy
       this.setSource(this._sources)
     }
   }
 
-  get sourcePolicy() {
+  public get sourcePolicy() {
     return this._sourcePolicy
   }
 
@@ -203,6 +237,13 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     }
   }
 
+  private _updateQualityId() {
+    const corePlayer = this.corePlayer
+    if (corePlayer) {
+      corePlayer.setQualityById(this._requestedQualityId, this._abrFastSwitch)
+    }
+  }
+
   public get src() {
     return this.video ? this.video.src : ''
   }
@@ -212,17 +253,36 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   }
 
   public get currentQualityId() {
-    return this._corePlayerRef.value?.qualityId || this._requestedQualityId
+    return this.corePlayer?.qualityId || this._requestedQualityId
   }
 
   public get currentPlayList() {
-    return this._corePlayerRef.value?.playList || []
+    return this.corePlayer?.playList || []
+  }
+
+  public get requestedQualityId() {
+    return this._requestedQualityId
+  }
+
+  public get isAutoQuality() {
+    const autoQuality = this.corePlayer?.autoQuality
+    if (typeof autoQuality === 'boolean') {
+      return autoQuality
+    }
+    return this._requestedQualityId === 'auto'
   }
 
   public requestQualityById(id: string) {
     if (this._requestedQualityId !== id) {
       this._requestedQualityId = id
+      this._updateQualityId()
       this._onQualityRequest.fire(id)
+      const corePlayer = this.corePlayer
+      if (corePlayer) {
+        this._delayQualitySwitchRequest.value = corePlayer.onQualitySwitching(qualityLevel => {
+          this._onQualitySwitchStart.fire({ ...qualityLevel })
+        })
+      }
     }
   }
 
@@ -253,21 +313,9 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       const video = this.withVideo()
       createCorePlayer(source, video, sources)
         .then(corePlayer => {
-          const disposables: IDisposable[] = []
-
           this._onPlayListChange.input = corePlayer.onPlayListChange
           this._onQualityChange.input = corePlayer.onQualityChange
-
-          corePlayer.onReady(
-            () => corePlayer.setQualityById(this._requestedQualityId),
-            null,
-            disposables
-          )
-
-          this.onQualityRequest(corePlayer.setQualityById, corePlayer, disposables)
-
-          onDispose(corePlayer, () => dispose(disposables))
-
+          this._updateQualityId()
           this._corePlayerRef.value = corePlayer
         })
         .catch(err => console.warn(err))

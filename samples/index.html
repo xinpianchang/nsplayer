@@ -4,13 +4,63 @@
   <meta name="viewport" content="width=device-width" />
   <title>NSPlayer Test Page</title>
   <style>
+    * {
+      outline: none;
+    }
     html, body {
       margin: 0;
       padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: black;
+    }
+    body {
+      display: flex;
+      align-items: stretch;
+      color: #f1f1f1;
     }
     div.container {
-      width: 100vw;
-      height: 100vh;
+      flex: 1 1 auto;
+    }
+    div.controller {
+      flex: 0 0 400px;
+      background: #111111;
+      padding: 10px;
+    }
+    div.quality-level {
+      padding: 3px 6px;
+      box-sizing: border-box;
+      border: 1px solid #444444;
+      margin-top: 2px;
+      transition: all .2s;
+      cursor: pointer;
+    }
+    div.quality-level:hover {
+      border-color: #777777;
+      background: #333333;
+    }
+    div.quality-level.selected {
+      color: green;
+      background-color: #64ffdd;
+      border-color: #ffffff;
+    }
+    div.player-current {
+      margin: 20px 0 0;
+      border: 1px solid #777777;
+      padding: 3px 6px;
+      box-sizing: border-box;
+      background: #1f1f1f;
+    }
+    div.player-current.animation {
+      transition: all 1s;
+    }
+    div.player-current.change {
+      background: #777777;
+    }
+    div.player-quality-changing {
+      padding: 3px 7px;
+      color: #555555;
     }
     div.container video {
       width: 100%;
@@ -22,13 +72,25 @@
   <div class="container">
     <!-- <video autoplay controls preload="auto" src="https://api.dogecloud.com/player/get.mp4?vcode=5ac682e6f8231991&userId=17&ext=.mp4"></video> -->
   </div>
+  <div class="controller">
+    <div class="player-name"></div>
+    <hr />
+    <div class="player-list"></div>
+    <div class="player-current"></div>
+    <div class="player-quality-changing"></div>
+  </div>
   <!-- <script src="../dist/index.umd.js"></script> -->
   <script type="module">
     import NSPlayer from '../dist/esm/index.js'
+    const { qualityLevelToId, idToQualityLevel } = NSPlayer
     // https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd
     // https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8
     // https://qiniu-xpc4.xpccdn.com/5ed504422a766.mp4
-    const player = new NSPlayer({
+
+    const $ = document.querySelector.bind(document)
+    const $$ = document.querySelectorAll.bind(document)
+
+    window.player = new NSPlayer({
       selector: 'div.container',
       source: [
         {
@@ -40,24 +102,99 @@
       ],
       // autoplay: true,
       controls: true,
+      abrFastSwitch: true,
     })
 
-    // player.container = document.querySelector('div.container')
-    // player.
-    // player.autoplay = true
-    // player.play()
-    // setTimeout(() => player.play(), 5000)
+    function qualityIdToText(qualityId) {
+      if (qualityId === 'auto') {
+        return 'auto'
+      } else {
+        const level = idToQualityLevel(qualityId)
+        if (player.isAutoQuality) {
+          return `auto (${level.bitrate / 1000} kbps ${level.width}x${level.height})`
+        } else {
+          return `${level.bitrate / 1000} kbps ${level.width}x${level.height}`
+        }
+      }
+    }
 
-    // player.onError(err => console.warn(err))
+    function updatePlayList() {
+      const playList = player.currentPlayList
+      $('.player-name').innerText = player.currentPlayerName
+      $('.player-list').innerHTML = ''
 
-    player.onPlayListChange(evt => {
-      console.log(...evt)
-      console.log('player name:', player.currentPlayerName)
-      // UI.make(['auto', '4K'])
-    })
+      const item = document.createElement('div')
+      item.setAttribute('class', 'quality-level')
+      item.innerText = 'auto'
+      item.setAttribute('id', 'auto')
+      $('.player-list').appendChild(item)
+      item.onclick = () => player.requestQualityById('auto')
 
-    // player.onSeeked(evt => console.log(evt))
+      playList.forEach(level => {
+        const item = document.createElement('div')
+        item.setAttribute('class', 'quality-level')
+        item.innerText = `${level.bitrate / 1000} kbps ${level.width}x${level.height}`
+        const qualityId = qualityLevelToId(level)
+        item.setAttribute('id', qualityId)
+        item.onclick = () => player.requestQualityById(qualityId)
+        $('.player-list').appendChild(item)
+      })
 
+      $(`#${player.requestedQualityId}`).classList.add('selected')
+    }
+
+    function requestQuality() {
+      const qualityId = player.requestedQualityId
+      const isAutoQuality = player.isAutoQuality
+      $$('.quality-level').forEach(item => item.classList.remove('selected'))
+      if (qualityId !== 'auto') {
+        $(`#${qualityId}`).classList.add('selected')
+      } else {
+        $('#auto').classList.add('selected')
+      }
+    }
+
+    let animation = 0
+
+    function updateQuality() {
+      const qualityId = player.currentQualityId
+      $('.player-current').innerText = qualityIdToText(qualityId)
+      $('.player-quality-changing').innerText = ''
+      if (animation) {
+        clearTimeout(animation)
+        $('.player-current').classList.remove('animation')
+      }
+      $('.player-current').classList.add('change')
+      setTimeout(() => {
+        $('.player-current').classList.add('animation')
+        $('.player-current').classList.remove('change')
+        animation = setTimeout(() => $('.player-current').classList.remove('animation'), 1000)
+      })      
+    }
+
+    function startSwitch(level) {
+      $('.player-quality-changing').innerText = `quality request ${level.bitrate / 1000} kbps ${level.width}x${level.height}...`
+    }
+
+    player.onPlayListChange(updatePlayList)
+    player.onQualityRequest(requestQuality)
+    player.onQualitySwitchStart(startSwitch)
+    player.onQualityChange(updateQuality)
+
+    $('.player-current').innerText = qualityIdToText(player.currentQualityId)
+
+
+    function showEvent(event) {
+      console.log(`event: ${event.type}`)
+    }
+
+    player.onPlay(showEvent)
+    player.onPause(showEvent)
+    player.onPlaying(showEvent)
+    player.onWaiting(showEvent)
+    player.onSuspend(showEvent)
+    player.onStalled(showEvent)
+    player.onEnded(showEvent)
 
     // evt.data: {
     //   supportAuto: true,

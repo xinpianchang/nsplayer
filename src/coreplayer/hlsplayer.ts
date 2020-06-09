@@ -15,6 +15,7 @@ const supportMSE = Hls.isSupported()
 
 export class HlsPlayer extends CorePlayer {
   private _hlsPlayer?: Hls
+  private _nextLevel = -1
 
   constructor(video: HTMLVideoElement, source: SourceWithMimeType) {
     super(video, source)
@@ -45,12 +46,20 @@ export class HlsPlayer extends CorePlayer {
     return this._hlsPlayer?.levels[this._hlsPlayer?.currentLevel]
   }
 
+  private requestQualityLevel() {
+    const level = this.levels[this._nextLevel]
+    if (level) {
+      const qualityLevel = this.hlsLevelToQuality(level)
+      this._onQualitySwitching.fire(qualityLevel)
+    }
+  }
+
   private findLevelById(id: string) {
     const playLevel = idToQualityLevel(id)
     const levels = this.levels
     if (playLevel && levels.length) {
       // bitrate match
-      let idx = levels.findIndex(level => level.bitrate, playLevel.bitrate)
+      let idx = levels.findIndex(level => level.bitrate === playLevel.bitrate)
       if (idx >= 0) {
         return idx
       }
@@ -86,10 +95,12 @@ export class HlsPlayer extends CorePlayer {
       const onManifestParsed = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.MANIFEST_PARSED)
       // const onLevelsUpdated = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.LEVELS_UPDATED)
       const onLevelSwitched = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.LEVEL_SWITCHED)
+      const onLevelSwitching = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.LEVEL_SWITCHING)
 
       onManifestParsed(this.updatePlayList, this, disposables)
       onManifestParsed(this.setReady, this, disposables)
       onManifestParsed(() => video.autoplay && video.play())
+      onLevelSwitching(this.requestQualityLevel, this, disposables)
       onLevelSwitched(this.updateQualityLevel, this, disposables)
 
       this._register(combinedDisposable(...disposables))
@@ -105,19 +116,34 @@ export class HlsPlayer extends CorePlayer {
   }
 
   public get name() {
-    return 'HLSPlayer'
+    return `HLSPlayer (${Hls.version})`
   }
 
-  public setQualityById(id: string): void {
+  public setQualityById(id: string, fastSwitch = false): void {
     const hlsPlayer = this._hlsPlayer
     if (hlsPlayer) {
-      let nextLevel
+      let nextLevel: number
       if (isAutoQuality(id)) {
         nextLevel = -1
       } else {
         nextLevel = this.findLevelById(id)
       }
-      hlsPlayer.nextLevel = nextLevel
+      this._nextLevel = nextLevel
+      if (this.isReady()) {
+        if (fastSwitch) {
+          hlsPlayer.nextLevel = nextLevel
+        } else {
+          hlsPlayer.loadLevel = nextLevel
+        }
+      } else {
+        hlsPlayer.startLevel = nextLevel
+        if (id !== 'auto') {
+          const qualityLevel = idToQualityLevel(id)
+          if (qualityLevel) {
+            setTimeout(() => this._onQualityChange.fire(qualityLevel))
+          }
+        }
+      }
     }
   }
 

@@ -14,6 +14,10 @@ export interface QualityLevel {
 
 export type PlayList = readonly QualityLevel[]
 
+export interface SourceWithMimeType extends Source {
+  mime: MimeType
+}
+
 export interface ICorePlayer extends IDisposable {
   /** 当前播放器内核名称 */
   readonly name: string
@@ -21,14 +25,17 @@ export interface ICorePlayer extends IDisposable {
   /** 当 PlayList 发生改变时触发 */
   readonly onPlayListChange: Event<PlayList>
 
-  /** 当播放质量切换时触发 */
+  /** 当播放质量切换发生请求时触发 */
+  readonly onQualitySwitching: Event<QualityLevel>
+
+  /** 当播放质量切换完成时触发 */
   readonly onQualityChange: Event<QualityLevel>
 
   /** 当播放器初始化完成，可以切换播放质量时触发 */
   readonly onReady: Event<void>
 
   /** 根据质量ID设定播放质量，ID 为 auto 表示自动切换, 需要等到 ready 状态之后 */
-  setQualityById(id: string): void
+  setQualityById(id: string, fastSwitch?: boolean): void
 
   /** 实际的当前播放质量ID，未确定时为 auto */
   readonly qualityId: string
@@ -83,7 +90,13 @@ export function isAutoQuality(id: string): id is 'auto' {
 }
 
 /** 两个播放质量是否同级 */
-export function isSameLevel(level1: QualityLevel, level2: QualityLevel) {
+export function isSameLevel(
+  level1: QualityLevel | undefined | null,
+  level2: QualityLevel | undefined | null
+) {
+  if (!level1 || !level2) {
+    return level2 === level2
+  }
   return (
     level1.bitrate === level2.bitrate &&
     level1.width === level2.width &&
@@ -99,6 +112,9 @@ export abstract class CorePlayer extends Disposable implements ICorePlayer {
   protected readonly _onQualityChange = this._register(new Emitter<QualityLevel>())
   public readonly onQualityChange = this._onQualityChange.event
 
+  protected readonly _onQualitySwitching = this._register(new Emitter<QualityLevel>())
+  public readonly onQualitySwitching = this._onQualitySwitching.event
+
   protected readonly _onReady = this._register(new Emitter<void>())
   public readonly onReady = this._onReady.event
 
@@ -110,7 +126,7 @@ export abstract class CorePlayer extends Disposable implements ICorePlayer {
   public abstract get autoQuality(): boolean
   public abstract get qualityId(): string
   public abstract get supportAutoQuality(): boolean
-  public abstract setQualityById(id: string): void
+  public abstract setQualityById(id: string, fastSwitch?: boolean): void
 
   /** 实现 video 和播放 src 对应的初始化关系，该 src 通常为一个 mp4 或 m3u8 或 mpd */
   protected abstract onInit(video: HTMLVideoElement, source: SourceWithMimeType): void
@@ -183,11 +199,11 @@ export abstract class CorePlayer extends Disposable implements ICorePlayer {
     this._onReady.fire()
   }
 
+  protected isReady() {
+    return this._ready
+  }
+
   public get playList() {
     return this._playList
   }
-}
-
-export interface SourceWithMimeType extends Source {
-  mime: MimeType
 }
