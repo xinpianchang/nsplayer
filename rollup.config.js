@@ -33,6 +33,7 @@ export default [
         dir: 'dist/esm',
         format: 'esm',
         intro: 'var global = typeof self !== undefined ? self : this;',
+        // sourcemap: true,
       },
     ],
     // external,

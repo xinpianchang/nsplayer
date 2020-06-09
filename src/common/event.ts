@@ -730,8 +730,10 @@ export class PauseableEmitter<T> extends Emitter<T> {
         // use the merge function to create a single composite
         // event. make a copy in case firing pauses this emitter
         const events = this._eventQueue.toArray()
-        this._eventQueue.clear()
-        super.fire(this._mergeFn(events))
+        if (events.length) {
+          this._eventQueue.clear()
+          super.fire(this._mergeFn(events))
+        }
       } else {
         // no merging, fire each event individually and test
         // that this emitter isn't paused halfway through

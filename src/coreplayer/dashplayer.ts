@@ -1,6 +1,5 @@
 import { toDisposable, IDisposable, combinedDisposable } from '../common/lifecycle'
 import {
-  PlayList,
   CorePlayer,
   SourceWithMimeType,
   QualityLevel,
@@ -8,15 +7,19 @@ import {
   isAutoQuality,
   qualityLevelToId,
 } from '.'
-import { MediaPlayer, MediaPlayerClass, MediaPlayerFactory, BitrateInfo } from 'dashjs'
+import {
+  MediaPlayer,
+  MediaPlayerClass,
+  MediaPlayerFactory,
+  BitrateInfo,
+  QualityChangeRequestedEvent,
+} from 'dashjs'
 import { Event } from '../common/event'
 
 export class DashPlayer extends CorePlayer {
   public static setDefaultMediaPlayerFactory(factory: MediaPlayerFactory) {
     DashPlayer._mediaPlayerFactory = factory
   }
-
-  public playList: PlayList = []
 
   private static _mediaPlayerFactory = MediaPlayer()
   private _dashPlayer: MediaPlayerClass
@@ -26,6 +29,11 @@ export class DashPlayer extends CorePlayer {
   constructor(video: HTMLVideoElement, source: SourceWithMimeType) {
     super(video, source)
     this._dashPlayer = DashPlayer._mediaPlayerFactory.create()
+    this._dashPlayer.updateSettings({
+      streaming: {
+        fastSwitchEnabled: true,
+      },
+    })
     this._register(toDisposable(() => this._dashPlayer.reset))
   }
 
@@ -49,12 +57,20 @@ export class DashPlayer extends CorePlayer {
     return this.levels[this._dashPlayer.getQualityFor(this._mediaType)]
   }
 
+  private requestQualityLevel(evt: QualityChangeRequestedEvent) {
+    const level = this.levels[evt.newQuality]
+    if (level) {
+      const qualityLevel = this.dashBitrateInfoToQuality(level)
+      this._onQualitySwitching.fire(qualityLevel)
+    }
+  }
+
   private findLevelById(id: string) {
     const playLevel = idToQualityLevel(id)
     const levels = this.levels
     if (playLevel && levels.length) {
       // bitrate match
-      let idx = levels.findIndex(level => level.bitrate, playLevel.bitrate)
+      let idx = levels.findIndex(level => level.bitrate === playLevel.bitrate)
       if (idx >= 0) {
         return idx
       }
@@ -92,43 +108,85 @@ export class DashPlayer extends CorePlayer {
       dashPlayer,
       MediaPlayer.events.QUALITY_CHANGE_RENDERED
     )
+    const onLevelSwitching = Event.fromNodeEventEmitter<QualityChangeRequestedEvent>(
+      dashPlayer,
+      MediaPlayer.events.QUALITY_CHANGE_REQUESTED
+    )
 
     onManifestParsed(this.updatePlayList, this, disposables)
     onManifestParsed(this.setReady, this, disposables)
+    onLevelSwitching(this.requestQualityLevel, this, disposables)
     onLevelSwitched(this.updateQualityLevel, this, disposables)
 
     this._register(combinedDisposable(...disposables))
   }
 
   public get name() {
-    return 'DASHPlayer'
+    return `DASHPlayer (${this._dashPlayer.getVersion()})`
   }
 
-  public setQualityById(id: string): void {
+  public setQualityById(id: string, fastSwitch = false): void {
     const dashPlayer = this._dashPlayer
-    if (isAutoQuality(id)) {
-      dashPlayer.updateSettings({
-        streaming: {
-          abr: {
-            autoSwitchBitrate: {
-              [this._mediaType]: true,
+    if (this.isReady()) {
+      // dashPlayer.setTrackSwitchModeFor('video', 'alwaysReplace')
+      if (isAutoQuality(id)) {
+        dashPlayer.updateSettings({
+          streaming: {
+            fastSwitchEnabled: fastSwitch,
+            abr: {
+              autoSwitchBitrate: {
+                [this._mediaType]: true,
+              },
             },
           },
-        },
-      })
+        })
+      } else {
+        dashPlayer.updateSettings({
+          streaming: {
+            fastSwitchEnabled: fastSwitch,
+            abr: {
+              autoSwitchBitrate: {
+                [this._mediaType]: false,
+              },
+            },
+          },
+        })
+        const nextQuality = this.findLevelById(id)
+        dashPlayer.setQualityFor(this._mediaType, nextQuality)
+        // TODO audio switched
+      }
     } else {
-      dashPlayer.updateSettings({
-        streaming: {
-          abr: {
-            autoSwitchBitrate: {
-              [this._mediaType]: false,
+      if (id === 'auto') {
+        dashPlayer.updateSettings({
+          streaming: {
+            fastSwitchEnabled: fastSwitch,
+            abr: {
+              autoSwitchBitrate: {
+                [this._mediaType]: true,
+              },
             },
           },
-        },
-      })
-      const nextQuality = this.findLevelById(id)
-      dashPlayer.setQualityFor(this._mediaType, nextQuality)
-      // audio switched
+        })
+      } else {
+        const qualityLevel = idToQualityLevel(id)
+        if (qualityLevel) {
+          dashPlayer.updateSettings({
+            streaming: {
+              fastSwitchEnabled: fastSwitch,
+              abr: {
+                autoSwitchBitrate: {
+                  [this._mediaType]: false,
+                },
+                initialBitrate: {
+                  [this._mediaType]: qualityLevel.bitrate,
+                },
+              },
+            },
+          })
+          // quality level fired
+          setTimeout(() => this._onQualityChange.fire(qualityLevel))
+        }
+      }
     }
   }
 
@@ -143,7 +201,9 @@ export class DashPlayer extends CorePlayer {
   public get autoQuality(): boolean {
     const autoSwitchBitrate = this._dashPlayer.getSettings().streaming?.abr?.autoSwitchBitrate
     if (autoSwitchBitrate) {
-      return autoSwitchBitrate[this._mediaType] ?? true
+      return typeof autoSwitchBitrate[this._mediaType] === 'boolean'
+        ? (autoSwitchBitrate[this._mediaType] as boolean)
+        : true
     }
     return true
   }
