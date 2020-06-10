@@ -4,8 +4,8 @@
 // import '@babel/runtime'
 
 import { BasePlayer } from './baseplayer'
-import { MutableDisposable, toDisposable, IDisposable, dispose } from './common/lifecycle'
-import { Emitter, Event, Relay, PauseableEmitter } from './common/event'
+import { MutableDisposable, toDisposable, IDisposable, dispose } from '@newstudios/common/lifecycle'
+import { Emitter, Event, Relay, PauseableEmitter } from '@newstudios/common/event'
 import { Source, getMimeType } from './types'
 import {
   ICorePlayer,

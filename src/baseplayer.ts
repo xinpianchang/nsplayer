@@ -1,8 +1,13 @@
 import delegates from 'delegates'
-import { Disposable, MutableDisposable, combinedDisposable, IDisposable } from './common/lifecycle'
-import { Emitter, Event } from './common/event'
+import {
+  Disposable,
+  MutableDisposable,
+  combinedDisposable,
+  IDisposable,
+} from '@newstudios/common/lifecycle'
+import { Emitter, Event } from '@newstudios/common/event'
 import { BasePlayerWithEvent, VideoEventNameMap, VideoEventNameArray, isSafari } from './types'
-import { assert } from './common/functional'
+import { assert } from './types'
 
 export interface NSPlayerOptions {
   el?: HTMLElement

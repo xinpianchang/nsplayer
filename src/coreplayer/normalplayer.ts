@@ -1,6 +1,6 @@
-// import { Disposable, toDisposable } from '../common/lifecycle'
+// import { Disposable, toDisposable } from '@newstudios/common/lifecycle'
 // import { ICorePlayer, PlayList, createPlayList } from '.'
-// import { Emitter } from '../common/event'
+// import { Emitter } from '@newstudios/common/event'
 // // import Hls from 'hls.js'
 // // const STREAM_INITIALIZED = Dash.MediaPlayer.events.STREAM_INITIALIZED
 

@@ -1,4 +1,4 @@
-import { toDisposable, IDisposable, combinedDisposable } from '../common/lifecycle'
+import { toDisposable, IDisposable, combinedDisposable } from '@newstudios/common/lifecycle'
 import {
   CorePlayer,
   SourceWithMimeType,
@@ -14,7 +14,7 @@ import {
   BitrateInfo,
   QualityChangeRequestedEvent,
 } from 'dashjs'
-import { Event } from '../common/event'
+import { Event } from '@newstudios/common/event'
 
 export class DashPlayer extends CorePlayer {
   public static setDefaultMediaPlayerFactory(factory: MediaPlayerFactory) {

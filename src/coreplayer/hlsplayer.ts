@@ -1,5 +1,5 @@
 import Hls from 'hls.js'
-import { toDisposable, IDisposable, combinedDisposable } from '../common/lifecycle'
+import { toDisposable, IDisposable, combinedDisposable } from '@newstudios/common/lifecycle'
 import {
   CorePlayer,
   SourceWithMimeType,
@@ -8,8 +8,8 @@ import {
   QualityLevel,
   qualityLevelToId,
 } from '.'
-import { Event } from '../common/event'
-import { onUnexpectedError } from '../common/errors'
+import { Event } from '@newstudios/common/event'
+import { onUnexpectedError } from '@newstudios/common/errors'
 
 const supportMSE = Hls.isSupported()
 

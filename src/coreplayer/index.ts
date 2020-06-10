@@ -1,9 +1,9 @@
-import { IDisposable, Disposable, toDisposable } from '../common/lifecycle'
+import { IDisposable, Disposable, toDisposable } from '@newstudios/common/lifecycle'
 // import { DashPlayer } from './dashplayer'
 // import { HlsPlayer } from './hlsplayer'
 // import { NormalPlayer } from './normalplayer'
 import { MimeType, Source /*, isHls, isDash, isMp4*/ } from '../types'
-import { Event, Emitter } from '../common/event'
+import { Event, Emitter } from '@newstudios/common/event'
 
 export interface QualityLevel {
   readonly bitrate: number

@@ -1,4 +1,4 @@
-import { Event } from './common/event'
+import { Event } from '@newstudios/common/event'
 
 export const VideoEventNameMap = {
   onEncypted: 'encrypted',
@@ -129,6 +129,12 @@ export function isSafari() {
   const chr = !!window.navigator.userAgent.match(/chrome/i)
   const sfri = !!window.navigator.userAgent.match(/safari/i)
   return !chr && sfri
+}
+
+export function assert(target: any): asserts target is true {
+  if (!target) {
+    throw new Error(`expect target but get [${target}]`)
+  }
 }
 
 export interface Source {
