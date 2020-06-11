@@ -1,3 +1,4 @@
+/* eslint-disable no-constant-condition */
 import { Event } from '@newstudios/common/event'
 
 export const VideoEventNameMap = {
@@ -135,6 +136,69 @@ export function assert(target: any): asserts target is true {
   if (!target) {
     throw new Error(`expect target but get [${target}]`)
   }
+}
+
+function dup(char: string, count: number): string {
+  return [...new Array(count)].reduce(l => l + char, '')
+}
+
+function prefix(num: number, len: number): string {
+  const t = String(num)
+  if (t.length < len) {
+    return `${dup('0', len - t.length)}${t}`
+  }
+  return t
+}
+
+/**
+ * format the seconds time
+ * @param timeInSeconds the number of seconds
+ * @param format h:mm:ss.SSS
+ */
+export function formatTime(timeInSeconds: number, format: string) {
+  const date = new Date(timeInSeconds * 1000)
+  let time = format
+  let changed = false
+
+  const hh = ~~(timeInSeconds / 3600)
+  {
+    const ma = time.match(/(h+)/)
+    if (ma) {
+      const h = ma[1]
+      time = time.replace(h, prefix(hh, h.length))
+      changed = true
+    }
+  }
+
+  const mm = changed ? date.getUTCMinutes() : ~~(timeInSeconds / 60)
+  {
+    const ma = time.match(/(m+)/)
+    if (ma) {
+      const m = ma[1]
+      time = time.replace(m, prefix(mm, m.length))
+      changed = true
+    }
+  }
+
+  const ss = changed ? date.getUTCSeconds() : ~~timeInSeconds
+  {
+    const ma = time.match(/(s+)/)
+    if (ma) {
+      const s = ma[1]
+      time = time.replace(s, prefix(ss, s.length))
+    }
+  }
+
+  const SSS = changed ? date.getMilliseconds() : ~~(timeInSeconds * 1000)
+  {
+    const ma = time.match(/(S+)/)
+    if (ma) {
+      const S = ma[1]
+      time = time.replace(S, prefix(SSS, S.length))
+    }
+  }
+
+  return time
 }
 
 export interface Source {

@@ -4,9 +4,15 @@
 // import '@babel/runtime'
 
 import { BasePlayer } from './baseplayer'
-import { MutableDisposable, toDisposable, IDisposable, dispose } from '@newstudios/common/lifecycle'
+import {
+  MutableDisposable,
+  toDisposable,
+  IDisposable,
+  dispose,
+  DisposableStore,
+} from '@newstudios/common/lifecycle'
 import { Emitter, Event, Relay, PauseableEmitter } from '@newstudios/common/event'
-import { Source, getMimeType } from './types'
+import { Source, getMimeType, formatTime } from './types'
 import {
   ICorePlayer,
   PlayList,
@@ -39,7 +45,7 @@ export interface IPlayer extends BasePlayer {
   readonly currentQualityId: string
   readonly currentPlayList: PlayList
   readonly requestedQualityId: string
-  readonly isAutoQuality: boolean
+  readonly autoQuality: boolean
   container: HTMLElement | null
   sourcePolicy: SourcePolicy
 
@@ -57,6 +63,7 @@ export interface IPlayer extends BasePlayer {
   readonly onVideoAttach: Event<HTMLVideoElement>
   readonly onVideoDetach: Event<HTMLVideoElement>
   readonly onQualitySwitchStart: Event<QualityLevel>
+  readonly onQualitySwitchEnd: Event<QualityLevel>
   readonly onQualityChange: Event<QualityLevel>
   readonly onPlayListChange: Event<PlayList>
   readonly onQualityRequest: Event<string>
@@ -70,6 +77,8 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   public static readonly idToQualityLevel = idToQualityLevel
   public static readonly isAutoQuality = isAutoQuality
   public static readonly isSameLevel = isSameLevel
+  public static readonly formatTime = formatTime
+  public static readonly getMimeType = getMimeType
 
   private _el: HTMLElement | null = null
   private _disposableParentElement = new MutableDisposable()
@@ -114,14 +123,31 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     }
   )
 
+  protected readonly _onQualitySwitchEnd = this._register(
+    new PauseableEmitter<QualityLevel>({
+      merge: levels => levels[levels.length - 1],
+    })
+  )
+  public readonly onQualitySwitchEnd = Event.filter(
+    this._onQualitySwitchEnd.event,
+    qualityLevel => {
+      const requestedQualityLevel = idToQualityLevel(this.requestedQualityId)
+      return isSameLevel(qualityLevel, requestedQualityLevel)
+    }
+  )
+
   constructor(readonly opt: NSPlayerOptions = {}) {
     super()
     this._register(this._disposableParentElement)
     this._register(this._delayQualitySwitchRequest)
     this._register(this._corePlayerRef)
-    this._register(this.onPause(this._onQualitySwitchStart.pause, this._onQualitySwitchStart))
-    this._register(this.onPlay(this._onQualitySwitchStart.resume, this._onQualitySwitchStart))
+    this.onPause(this._onQualitySwitchStart.pause, this._onQualitySwitchStart)
+    this.onPlay(this._onQualitySwitchStart.resume, this._onQualitySwitchStart)
+    this.onPause(this._onQualitySwitchEnd.pause, this._onQualitySwitchEnd)
+    this.onPlay(this._onQualitySwitchEnd.resume, this._onQualitySwitchEnd)
+    this.onQualitySwitchEnd(() => (this._delayQualitySwitchRequest.value = undefined))
     this._onQualitySwitchStart.pause()
+    this._onQualitySwitchEnd.pause()
 
     if (document !== undefined) {
       this.video = this.initHTMLVideoElement()
@@ -264,7 +290,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     return this._requestedQualityId
   }
 
-  public get isAutoQuality() {
+  public get autoQuality() {
     const autoQuality = this.corePlayer?.autoQuality
     if (typeof autoQuality === 'boolean') {
       return autoQuality
@@ -275,14 +301,27 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   public requestQualityById(id: string) {
     if (this._requestedQualityId !== id) {
       this._requestedQualityId = id
-      this._updateQualityId()
       this._onQualityRequest.fire(id)
       const corePlayer = this.corePlayer
-      if (corePlayer) {
-        this._delayQualitySwitchRequest.value = corePlayer.onQualitySwitching(qualityLevel => {
-          this._onQualitySwitchStart.fire({ ...qualityLevel })
-        })
+      if (corePlayer && !isAutoQuality(id)) {
+        const disposableStore = new DisposableStore()
+
+        corePlayer.onQualitySwitching(
+          this._onQualitySwitchStart.fire,
+          this._onQualitySwitchStart,
+          disposableStore
+        )
+
+        corePlayer.onQualityChange(
+          this._onQualitySwitchEnd.fire,
+          this._onQualitySwitchEnd,
+          disposableStore
+        )
+
+        this._delayQualitySwitchRequest.value = disposableStore
       }
+      // must call finally
+      this._updateQualityId()
     }
   }
 

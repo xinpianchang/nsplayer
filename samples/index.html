@@ -59,8 +59,16 @@
       background: #777777;
     }
     div.player-quality-changing {
-      padding: 3px 7px;
+      padding: 3px 0;
       color: #555555;
+    }
+    div.player-time {
+      padding: 3px 0;
+      font-family: monospace;
+      font-weight: 700;
+    }
+    div.player-waiting {
+      visibility: hidden;
     }
     div.container video {
       width: 100%;
@@ -78,6 +86,8 @@
     <div class="player-list"></div>
     <div class="player-current"></div>
     <div class="player-quality-changing"></div>
+    <div class="player-time"></div>
+    <progress class="player-waiting"></progress>
   </div>
   <!-- <script src="../dist/index.umd.js"></script> -->
   <script type="module">
@@ -100,7 +110,7 @@
           src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd',
         }
       ],
-      // autoplay: true,
+      autoplay: true,
       controls: true,
       abrFastSwitch: true,
     })
@@ -110,7 +120,7 @@
         return 'auto'
       } else {
         const level = idToQualityLevel(qualityId)
-        if (player.isAutoQuality) {
+        if (player.autoQuality) {
           return `auto (${level.bitrate / 1000} kbps ${level.width}x${level.height})`
         } else {
           return `${level.bitrate / 1000} kbps ${level.width}x${level.height}`
@@ -145,7 +155,6 @@
 
     function requestQuality() {
       const qualityId = player.requestedQualityId
-      const isAutoQuality = player.isAutoQuality
       $$('.quality-level').forEach(item => item.classList.remove('selected'))
       if (qualityId !== 'auto') {
         $(`#${qualityId}`).classList.add('selected')
@@ -159,7 +168,6 @@
     function updateQuality() {
       const qualityId = player.currentQualityId
       $('.player-current').innerText = qualityIdToText(qualityId)
-      $('.player-quality-changing').innerText = ''
       if (animation) {
         clearTimeout(animation)
         $('.player-current').classList.remove('animation')
@@ -173,19 +181,35 @@
     }
 
     function startSwitch(level) {
-      $('.player-quality-changing').innerText = `quality request ${level.bitrate / 1000} kbps ${level.width}x${level.height}...`
+      $('.player-quality-changing').innerText = `Quality Request: ${level.bitrate / 1000} kbps ${level.width}x${level.height}...`
+    }
+
+    function endSwitch() {
+      $('.player-quality-changing').innerText = 'Done'
     }
 
     player.onPlayListChange(updatePlayList)
     player.onQualityRequest(requestQuality)
     player.onQualitySwitchStart(startSwitch)
+    player.onQualitySwitchEnd(endSwitch)
     player.onQualityChange(updateQuality)
 
     $('.player-current').innerText = qualityIdToText(player.currentQualityId)
 
+    function updateTime() {
+      $('.player-time').innerText = NSPlayer.formatTime(player.currentTime, 'm:ss') + ' / ' + NSPlayer.formatTime(player.duration, 'm:ss')
+    }
 
     function showEvent(event) {
       console.log(`event: ${event.type}`)
+    }
+
+    function handleWait() {
+      $('.player-waiting').style.visibility = 'visible'
+    }
+
+    function handleRestore() {
+      $('.player-waiting').style.visibility = 'hidden'
     }
 
     player.onPlay(showEvent)
@@ -195,6 +219,20 @@
     player.onSuspend(showEvent)
     player.onStalled(showEvent)
     player.onEnded(showEvent)
+    player.onVolumeChange(showEvent)
+    // player.onDurationChange(showEvent)
+    // player.onTimeUpdate(showEvent)
+    player.onProgress(showEvent)
+    player.onSeeking(showEvent)
+    player.onSeeked(showEvent)
+    player.onCanPlay(showEvent)
+    player.onCanPlayThrough(showEvent)
+
+    player.onDurationChange(updateTime)
+    player.onTimeUpdate(updateTime)
+    player.onWaiting(handleWait)
+    player.onPlaying(handleRestore)
+    player.onPause(handleRestore)
 
     // evt.data: {
     //   supportAuto: true,

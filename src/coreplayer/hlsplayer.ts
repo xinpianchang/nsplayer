@@ -93,10 +93,11 @@ export class HlsPlayer extends CorePlayer {
 
       const disposables: IDisposable[] = []
       const onManifestParsed = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.MANIFEST_PARSED)
-      // const onLevelsUpdated = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.LEVELS_UPDATED)
+      const onLevelsUpdated = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.LEVEL_UPDATED)
       const onLevelSwitched = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.LEVEL_SWITCHED)
       const onLevelSwitching = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.LEVEL_SWITCHING)
 
+      onLevelsUpdated(this.updatePlayList, this, disposables)
       onManifestParsed(this.updatePlayList, this, disposables)
       onManifestParsed(this.setReady, this, disposables)
       onManifestParsed(() => video.autoplay && video.play())
