@@ -88,9 +88,6 @@ export class HlsPlayer extends CorePlayer {
   protected onInit(video: HTMLVideoElement, source: SourceWithMimeType) {
     const hlsPlayer = this._hlsPlayer
     if (hlsPlayer) {
-      hlsPlayer.attachMedia(video)
-      hlsPlayer.loadSource(source.src)
-
       const disposables: IDisposable[] = []
       const onManifestParsed = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.MANIFEST_PARSED)
       const onLevelsUpdated = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.LEVEL_UPDATED)
@@ -103,6 +100,9 @@ export class HlsPlayer extends CorePlayer {
       onManifestParsed(() => video.autoplay && video.play())
       onLevelSwitching(this.requestQualityLevel, this, disposables)
       onLevelSwitched(this.updateQualityLevel, this, disposables)
+
+      hlsPlayer.attachMedia(video)
+      hlsPlayer.loadSource(source.src)
 
       this._register(combinedDisposable(...disposables))
     } else {

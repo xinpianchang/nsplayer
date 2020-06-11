@@ -299,26 +299,42 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   }
 
   public requestQualityById(id: string) {
-    if (this._requestedQualityId !== id) {
+    const oldQualityId = this._requestedQualityId
+    if (oldQualityId !== id) {
       this._requestedQualityId = id
       this._onQualityRequest.fire(id)
       const corePlayer = this.corePlayer
-      if (corePlayer && !isAutoQuality(id)) {
-        const disposableStore = new DisposableStore()
+      if (corePlayer) {
+        if (isAutoQuality(id)) {
+          // oldQuality cannot be auto quality
+          const qualityLevel = idToQualityLevel(oldQualityId)
+          if (qualityLevel) {
+            // cancel quality change due the auto quality
+            this._onQualitySwitchEnd.fire(qualityLevel)
+          }
+        } else {
+          const disposableStore = new DisposableStore()
 
-        corePlayer.onQualitySwitching(
-          this._onQualitySwitchStart.fire,
-          this._onQualitySwitchStart,
-          disposableStore
-        )
+          corePlayer.onQualitySwitching(
+            e => this._onQualitySwitchStart.fire(e),
+            null,
+            disposableStore
+          )
 
-        corePlayer.onQualityChange(
-          this._onQualitySwitchEnd.fire,
-          this._onQualitySwitchEnd,
-          disposableStore
-        )
+          // corePlayer.onQualitySwitching(
+          //   this._onQualitySwitchStart.fire,
+          //   this._onQualitySwitchStart,
+          //   disposableStore
+          // )
 
-        this._delayQualitySwitchRequest.value = disposableStore
+          corePlayer.onQualityChange(
+            this._onQualitySwitchEnd.fire,
+            this._onQualitySwitchEnd,
+            disposableStore
+          )
+
+          this._delayQualitySwitchRequest.value = disposableStore
+        }
       }
       // must call finally
       this._updateQualityId()

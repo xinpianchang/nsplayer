@@ -71,6 +71,7 @@ export interface BasePlayer extends BasePlayerWithEvent {
 export abstract class BasePlayer extends Disposable implements IBasePlayer {
   private _video: HTMLVideoElement | null = null
   private _disposableVideo = new MutableDisposable()
+  private _paused = true
 
   // detect pure safari
   protected static _isSafari = isSafari()
@@ -116,27 +117,36 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
   private _registerVideoListeners(video: HTMLVideoElement | null) {
     this._video = video
     if (video) {
+      this._paused = video.paused
       const player = this as any
       const disposables: IDisposable[] = []
-
-      // fix auto play rejection issue
-      this._fixAutoPlayPolicy(video, disposables)
 
       VideoEventNameArray.forEach(key => {
         // eliminate the 'on' upon the event type
         const type = VideoEventNameMap[key]
+
+        if (key === 'onPause' || key === 'onPlay') {
+          // fix pause and play event in safari
+          return
+        }
 
         // every video event should be fired to the player event emitter
         const handler = (ev: any) => player[`_${key}`].fire(ev)
         Event.fromDOMEventEmitter(video, type)(handler, this, disposables)
       })
 
+      // fix auto play rejection issue
+      this._fixAutoPlayPolicy(video, disposables)
+
+      // fix pause event twice issue in safari
+      this._fixPauseEvent(video, disposables)
+
       return combinedDisposable(...disposables)
     }
   }
 
   // when autoplay policy error happened, just set muted true and replay
-  private _fixAutoPlayPolicy(video: HTMLVideoElement, disposables?: IDisposable[]): IDisposable {
+  private _fixAutoPlayPolicy(video: HTMLVideoElement, disposables?: IDisposable[]) {
     if (!('_fixedPlay' in video)) {
       const play = video.play
       video.play = () => {
@@ -149,26 +159,50 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
           )
         })
       }
+
+      const onAutoPlayError = Event.filter(
+        Event.once(Event.fromDOMEventEmitter<ErrorEvent>(video, 'error')),
+        ({ error: err }) =>
+          this.autoplay &&
+          !this.muted &&
+          (err.name == 'NotAllowedError' || (err.name == 'AbortError' && BasePlayer._isSafari))
+      )
+
+      onAutoPlayError(
+        () => {
+          console.info('mute and re-play')
+          this.muted = true
+          this.play()
+        },
+        null,
+        disposables
+      )
+
       Object.defineProperty(video, '_fixedPlay', { value: true })
     }
+  }
 
-    const onAutoPlayError = Event.filter(
-      Event.once(Event.fromDOMEventEmitter<ErrorEvent>(video, 'error')),
-      ({ error: err }) =>
-        this.autoplay &&
-        !this.muted &&
-        (err.name == 'NotAllowedError' || (err.name == 'AbortError' && BasePlayer._isSafari))
-    )
+  private _fixPauseEvent(video: HTMLVideoElement, disposables?: IDisposable[]) {
+    if (!('_fixedPause' in video)) {
+      const target = this as any
+      const setPaused = (paused: boolean, evt: any) => {
+        if (this._paused !== paused) {
+          this._paused = paused
+          if (paused) {
+            target._onPause.fire(evt)
+          } else {
+            target._onPlay.fire(evt)
+          }
+        }
+      }
 
-    return onAutoPlayError(
-      () => {
-        console.info('mute and re-play')
-        this.muted = true
-        this.play()
-      },
-      null,
-      disposables
-    )
+      const onPlay = Event.fromDOMEventEmitter(video, 'play')
+      onPlay((evt: any) => setPaused(false, evt), null, disposables)
+      const onPause = Event.fromDOMEventEmitter(video, 'pause')
+      onPause((evt: any) => setPaused(true, evt), null, disposables)
+
+      Object.defineProperty(video, '_fixedPause', { value: true })
+    }
   }
 
   /**
