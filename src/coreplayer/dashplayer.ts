@@ -74,7 +74,6 @@ export class DashPlayer extends CorePlayer {
   }
 
   private requestQualityLevel(evt: QualityChangeRequestedEvent) {
-    this._currentLevelIndex = evt.oldQuality
     const level = this.levels[evt.newQuality]
     if (level) {
       const qualityLevel = this.dashBitrateInfoToQuality(level)
@@ -168,6 +167,10 @@ export class DashPlayer extends CorePlayer {
             },
           },
         })
+      }
+      const qualityLevel = this.qualityLevel
+      if (qualityLevel) {
+        setTimeout(() => this._onQualityChange.fire(qualityLevel))
       }
     } else {
       if (this.isReady()) {

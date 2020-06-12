@@ -22,6 +22,8 @@
     }
     div.container {
       flex: 1 1 auto;
+      width: 100%;
+      position: relative;
     }
     div.controller {
       flex: 0 0 400px;
@@ -74,6 +76,19 @@
       width: 100%;
       height: 100%;
     }
+    button {
+      display: block;
+      margin: 3px 0;
+    }
+    div.container div.toast {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      background: #22222288;
+      transition: all .3s;
+      opacity: 0;
+      z-index: 1;
+    }
   </style>
 </head>
 <body>
@@ -88,6 +103,9 @@
     <div class="player-quality-changing"></div>
     <div class="player-time"></div>
     <progress class="player-waiting"></progress>
+    <button class="player-play">Play</button>
+    <button class="player-fullscreen">Fullscreen</button>
+    <div class="player-volume"></div>
   </div>
   <!-- <script src="../dist/index.umd.js"></script> -->
   <script type="module">
@@ -128,6 +146,13 @@
       }
     }
 
+    function attachVideo() {
+      const toast = document.createElement('div')
+      toast.classList.add('toast')
+      player.container.appendChild(toast)
+      console.log(toast)
+    }
+
     function updatePlayList() {
       const playList = player.currentPlayList
       $('.player-name').innerText = player.currentPlayerName
@@ -151,6 +176,8 @@
       })
 
       $(`#${player.requestedQualityId}`).classList.add('selected')
+      $('.player-play').onclick = () => player.toggle()
+      $('.player-fullscreen').onclick = () => player.fullscreen ? player.exitFullscreen() : player.requestFullscreen()
     }
 
     function requestQuality() {
@@ -161,6 +188,7 @@
       } else {
         $('#auto').classList.add('selected')
       }
+      updateQuality()
     }
 
     let animation = 0
@@ -180,14 +208,29 @@
       })      
     }
 
+    let timer = 0
+    function toast(text, time) {
+      if (timer) {
+        clearTimeout(timer)
+      }
+      timer = setTimeout(() => $('.toast').style.opacity = 0, time)
+      $('.toast').style.opacity = 1
+      $('.toast').innerText = text
+    }
+
     function startSwitch(level) {
-      $('.player-quality-changing').innerText = `Quality Request: ${level.bitrate / 1000} kbps ${level.width}x${level.height}...`
+      const text = `Quality Request: ${level.bitrate / 1000} kbps ${level.width}x${level.height}...`
+      $('.player-quality-changing').innerText = text
+      toast(text, 3000)
     }
 
-    function endSwitch() {
-      $('.player-quality-changing').innerText = 'Done'
+    function endSwitch(level) {
+      const text = `Quality Request Done: ${level.bitrate / 1000} kbps ${level.width}x${level.height}`
+      $('.player-quality-changing').innerText = text
+      toast(text, 1000)
     }
 
+    player.onVideoAttach(attachVideo)
     player.onPlayListChange(updatePlayList)
     player.onQualityRequest(requestQuality)
     player.onQualitySwitchStart(startSwitch)
@@ -212,6 +255,17 @@
       $('.player-waiting').style.visibility = 'hidden'
     }
 
+    function updatePlayBtn() {
+      $('.player-play').innerText = player.paused ? 'Play' : 'Pause'
+    }
+
+    function updateVolume() {
+      $('.player-volume').innerText = player.muted ? 'Muted' : `Vol ${Math.round(player.volume * 100)} / 100`
+    }
+
+    updatePlayBtn()
+    updateVolume()
+
     player.onPlay(showEvent)
     player.onPause(showEvent)
     player.onPlaying(showEvent)
@@ -233,6 +287,9 @@
     player.onWaiting(handleWait)
     player.onPlaying(handleRestore)
     player.onPause(handleRestore)
+    player.onPlay(updatePlayBtn)
+    player.onPause(updatePlayBtn)
+    player.onVolumeChange(updateVolume)
 
     // evt.data: {
     //   supportAuto: true,

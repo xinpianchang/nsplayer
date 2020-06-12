@@ -126,6 +126,10 @@ export class HlsPlayer extends CorePlayer {
       let nextLevel: number
       if (isAutoQuality(id)) {
         nextLevel = -1
+        const qualityLevel = this.qualityLevel
+        if (qualityLevel) {
+          setTimeout(() => this._onQualityChange.fire(qualityLevel))
+        }
       } else {
         nextLevel = this.findLevelById(id)
       }

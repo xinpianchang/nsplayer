@@ -46,6 +46,7 @@ export interface IPlayer extends BasePlayer {
   readonly currentPlayList: PlayList
   readonly requestedQualityId: string
   readonly autoQuality: boolean
+  readonly fullscreen: boolean
   container: HTMLElement | null
   sourcePolicy: SourcePolicy
 
@@ -88,6 +89,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   private _requestedQualityId = 'auto'
   private _sourcePolicy = DefaultSourcePolicy
   private _abrFastSwitch = false
+  private _containerTimer = 0
 
   protected readonly _onFullscreenChange = this._register(new Emitter<void>())
   public readonly onFullscreenChange = this._onFullscreenChange.event
@@ -149,7 +151,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     this._onQualitySwitchStart.pause()
     this._onQualitySwitchEnd.pause()
 
-    if (document !== undefined) {
+    if (typeof document !== 'undefined') {
       this.video = this.initHTMLVideoElement()
       if (opt.el) {
         this.container = opt.el
@@ -209,6 +211,13 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     return Promise.reject(error)
   }
 
+  public get fullscreen() {
+    if (this._el) {
+      return document.fullscreenElement === this._el
+    }
+    return false
+  }
+
   private initHTMLVideoElement() {
     const video = document.createElement('video')
     video.controls = false
@@ -220,7 +229,15 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       return
     }
 
-    this._disposableParentElement.value = this._registerContainerListeners(el)
+    this._el = el
+    if (this._containerTimer) {
+      clearTimeout(this._containerTimer)
+    }
+
+    this._containerTimer = window.setTimeout(() => {
+      this._containerTimer = 0
+      this._disposableParentElement.value = this._registerContainerListeners(el)
+    })
   }
 
   public get container() {
@@ -239,7 +256,6 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   }
 
   private _registerContainerListeners(el: HTMLElement | null) {
-    this._el = el
     const video = this.withVideo()
     if (el) {
       const fullscreenChangeHandler = () => this._onFullscreenChange.fire()
@@ -302,42 +318,27 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     const oldQualityId = this._requestedQualityId
     if (oldQualityId !== id) {
       this._requestedQualityId = id
-      this._onQualityRequest.fire(id)
       const corePlayer = this.corePlayer
       if (corePlayer) {
-        if (isAutoQuality(id)) {
-          // oldQuality cannot be auto quality
-          const qualityLevel = idToQualityLevel(oldQualityId)
-          if (qualityLevel) {
-            // cancel quality change due the auto quality
-            this._onQualitySwitchEnd.fire(qualityLevel)
-          }
-        } else {
-          const disposableStore = new DisposableStore()
+        const disposableStore = new DisposableStore()
 
-          corePlayer.onQualitySwitching(
-            e => this._onQualitySwitchStart.fire(e),
-            null,
-            disposableStore
-          )
+        corePlayer.onQualitySwitching(
+          this._onQualitySwitchStart.fire,
+          this._onQualitySwitchStart,
+          disposableStore
+        )
 
-          // corePlayer.onQualitySwitching(
-          //   this._onQualitySwitchStart.fire,
-          //   this._onQualitySwitchStart,
-          //   disposableStore
-          // )
+        corePlayer.onQualityChange(
+          this._onQualitySwitchEnd.fire,
+          this._onQualitySwitchEnd,
+          disposableStore
+        )
 
-          corePlayer.onQualityChange(
-            this._onQualitySwitchEnd.fire,
-            this._onQualitySwitchEnd,
-            disposableStore
-          )
-
-          this._delayQualitySwitchRequest.value = disposableStore
-        }
+        this._delayQualitySwitchRequest.value = disposableStore
       }
       // must call finally
       this._updateQualityId()
+      this._onQualityRequest.fire(id)
     }
   }
 
