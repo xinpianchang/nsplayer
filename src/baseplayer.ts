@@ -16,6 +16,7 @@ export interface NSPlayerOptions {
 export interface IBasePlayer extends IDisposable {
   video: HTMLVideoElement | null
 
+  toggle(): void
   exitFullscreen(): Promise<void>
   requestFullscreen(options?: FullscreenOptions | undefined): Promise<void>
   readonly fullscreen: boolean
@@ -212,6 +213,14 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
     const video = this.video
     assert(video)
     return video
+  }
+
+  public toggle() {
+    if (this._paused) {
+      this.play()
+    } else {
+      this.pause()
+    }
   }
 }
 

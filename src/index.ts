@@ -24,6 +24,7 @@ import {
 } from './coreplayer'
 import { SourcePolicy, DefaultSourcePolicy } from './policy/source'
 import createCorePlayer from './createPlayer'
+import './fullscreen-polyfill'
 
 export interface NSPlayerOptions {
   el?: HTMLElement
@@ -67,6 +68,7 @@ export interface IPlayer extends BasePlayer {
   readonly onQualitySwitchEnd: Event<QualityLevel>
   readonly onQualityChange: Event<QualityLevel>
   readonly onPlayListChange: Event<PlayList>
+  readonly onAutoChange: Event<boolean>
   readonly onQualityRequest: Event<string>
 }
 
@@ -88,7 +90,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   private _sources: Source[] = []
   private _requestedQualityId = 'auto'
   private _sourcePolicy = DefaultSourcePolicy
-  private _abrFastSwitch = false
+  private _abrFastSwitch = true
   private _containerTimer = 0
 
   protected readonly _onFullscreenChange = this._register(new Emitter<void>())
@@ -108,6 +110,9 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
 
   protected readonly _onPlayListChange = this._register(new Relay<PlayList>())
   public readonly onPlayListChange = this._onPlayListChange.event
+
+  protected readonly _onAutoChange = this._register(new Relay<boolean>())
+  public readonly onAutoChange = this._onAutoChange.event
 
   protected readonly _onQualityRequest = this._register(new Emitter<string>())
   public readonly onQualityRequest = this._onQualityRequest.event
@@ -183,8 +188,8 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
         this.controls = opt.controls
       }
 
-      if (opt.abrFastSwitch) {
-        this._abrFastSwitch = true
+      if (opt.abrFastSwitch === false) {
+        this._abrFastSwitch = false
       }
 
       if (opt.source) {
@@ -282,7 +287,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   private _updateQualityId() {
     const corePlayer = this.corePlayer
     if (corePlayer) {
-      corePlayer.setQualityById(this._requestedQualityId, this._abrFastSwitch)
+      corePlayer.setQualityById(this._requestedQualityId)
     }
   }
 
@@ -367,10 +372,11 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     const mime = source.mime ?? getMimeType(source.src)
     if (mime) {
       const video = this.withVideo()
-      createCorePlayer(source, video, sources)
+      createCorePlayer(source, video, sources, this._abrFastSwitch)
         .then(corePlayer => {
           this._onPlayListChange.input = corePlayer.onPlayListChange
           this._onQualityChange.input = corePlayer.onQualityChange
+          this._onAutoChange.input = corePlayer.onAutoChange
           this._updateQualityId()
           this._corePlayerRef.value = corePlayer
         })

@@ -23,6 +23,7 @@
     div.container {
       flex: 1 1 auto;
       width: 100%;
+      height: 100%;
       position: relative;
     }
     div.controller {
@@ -75,6 +76,7 @@
     div.container video {
       width: 100%;
       height: 100%;
+      background-color: black;
     }
     button {
       display: block;
@@ -150,7 +152,6 @@
       const toast = document.createElement('div')
       toast.classList.add('toast')
       player.container.appendChild(toast)
-      console.log(toast)
     }
 
     function updatePlayList() {
@@ -236,6 +237,7 @@
     player.onQualitySwitchStart(startSwitch)
     player.onQualitySwitchEnd(endSwitch)
     player.onQualityChange(updateQuality)
+    player.onAutoChange(updateQuality)
 
     $('.player-current').innerText = qualityIdToText(player.currentQualityId)
 
