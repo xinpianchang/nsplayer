@@ -277,7 +277,7 @@
     player.onEnded(showEvent)
     player.onVolumeChange(showEvent)
     // player.onDurationChange(showEvent)
-    // player.onTimeUpdate(showEvent)
+    player.onTimeUpdate(showEvent)
     player.onProgress(showEvent)
     player.onSeeking(showEvent)
     player.onSeeked(showEvent)
@@ -286,6 +286,7 @@
 
     player.onDurationChange(updateTime)
     player.onTimeUpdate(updateTime)
+    player.onSeeking(updateTime)
     player.onWaiting(handleWait)
     player.onPlaying(handleRestore)
     player.onPause(handleRestore)
