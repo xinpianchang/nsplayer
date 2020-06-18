@@ -91,6 +91,9 @@
       opacity: 0;
       z-index: 1;
     }
+    button.player-auto-play-error {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -108,6 +111,7 @@
     <button class="player-play">Play</button>
     <button class="player-fullscreen">Fullscreen</button>
     <div class="player-volume"></div>
+    <button class="player-auto-play-error">恢复声音</button>
   </div>
   <!-- <script src="../dist/index.umd.js"></script> -->
   <script type="module">
@@ -116,6 +120,26 @@
     // https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd
     // https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8
     // https://qiniu-xpc4.xpccdn.com/5ed504422a766.mp4
+    const mp4s = [
+      {
+        src: "https://ks-xpctest4.xpccdn.com/7db48dcb-bc9e-4a29-85be-51f7839cdc6e.mp4",
+        bitrate: 10062123,
+        width: 3840,
+        height: 2160,
+      },
+      {
+        src: "https://ks-xpctest4.xpccdn.com/4c070116-76a8-4960-855d-3672cc02fbfd.mp4",
+        bitrate: 2514821,
+        width: 1280,
+        height: 720,
+      },
+      {
+        src: "https://ks-xpctest4.xpccdn.com/2c55e699-0d02-4e05-8573-f44efca0cfad.mp4",
+        bitrate: 1630269,
+        width: 960,
+        height: 540,
+      }
+    ]
 
     const $ = document.querySelector.bind(document)
     const $$ = document.querySelectorAll.bind(document)
@@ -123,12 +147,13 @@
     window.player = new NSPlayer({
       selector: 'div.container',
       source: [
-        {
-          src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8',
-        },
-        {
-          src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd',
-        }
+        // {
+        //   src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8',
+        // },
+        // {
+        //   src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd',
+        // },
+        ...mp4s,
       ],
       autoplay: true,
       controls: true,
@@ -159,12 +184,14 @@
       $('.player-name').innerText = player.currentPlayerName
       $('.player-list').innerHTML = ''
 
-      const item = document.createElement('div')
-      item.setAttribute('class', 'quality-level')
-      item.innerText = 'auto'
-      item.setAttribute('id', 'auto')
-      $('.player-list').appendChild(item)
-      item.onclick = () => player.requestQualityById('auto')
+      if (player.supportAutoQuality) {
+        const item = document.createElement('div')
+        item.setAttribute('class', 'quality-level')
+        item.innerText = 'auto'
+        item.setAttribute('id', 'auto')
+        $('.player-list').appendChild(item)
+        item.onclick = () => player.requestQualityById('auto')
+      }
 
       playList.forEach(level => {
         const item = document.createElement('div')
@@ -231,6 +258,20 @@
       toast(text, 1000)
     }
 
+    function showAutoPlayError(e) {
+      // prevent default 可以阻止静音方式自动播放
+      // e.preventDefault()
+      const autoPlayBtnRestore = $('.player-auto-play-error')
+      autoPlayBtnRestore.style.display = 'block'
+      const disposable = player.onVolumeChange(() => {
+        if (!player.muted) {
+          autoPlayBtnRestore.style.display = 'none'
+          disposable.dispose()
+        }
+      })
+      autoPlayBtnRestore.onclick = () => player.muted = false
+    }
+
     player.onVideoAttach(attachVideo)
     player.onPlayListChange(updatePlayList)
     player.onQualityRequest(requestQuality)
@@ -238,6 +279,7 @@
     player.onQualitySwitchEnd(endSwitch)
     player.onQualityChange(updateQuality)
     player.onAutoChange(updateQuality)
+    player.onAutoPlayError(showAutoPlayError)
 
     $('.player-current').innerText = qualityIdToText(player.currentQualityId)
 
@@ -290,6 +332,7 @@
     player.onWaiting(handleWait)
     player.onPlaying(handleRestore)
     player.onPause(handleRestore)
+    player.onError(handleRestore)
     player.onPlay(updatePlayBtn)
     player.onPause(updatePlayBtn)
     player.onVolumeChange(updateVolume)

@@ -1,5 +1,7 @@
 /* eslint-disable no-constant-condition */
-import { Event } from '@newstudios/common/event'
+import { Event as VSEvent } from '@newstudios/common/event'
+
+export type DOMEvent = Event
 
 export const VideoEventNameMap = {
   onEncypted: 'encrypted',
@@ -30,7 +32,9 @@ export const VideoEventNameMap = {
 
 export type VideoEventNameMap = typeof VideoEventNameMap
 export type BasePlayerWithEvent = {
-  readonly [key in keyof VideoEventNameMap]: Event<HTMLVideoElementEventMap[VideoEventNameMap[key]]>
+  readonly [key in keyof VideoEventNameMap]: VSEvent<
+    HTMLVideoElementEventMap[VideoEventNameMap[key]]
+  >
 }
 
 export type VideoEventName = keyof VideoEventNameMap

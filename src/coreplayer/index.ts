@@ -174,10 +174,10 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
 
   /** 更新 PlayList 播放级别组，每当获取到新的 PlayList 时请调用此接口 */
   protected updatePlayList() {
-    this.setPlayList(this.translatePlayList())
     this.updateQualityLevel()
     this.updateNextQualityLevel()
     this.updateAutoQuality()
+    this.setPlayList(this.translatePlayList())
   }
 
   public get nextQualityLevel() {
@@ -285,7 +285,9 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
 
   /** 翻译当前 PlayList */
   private translatePlayList() {
-    return this.levels.map(level => this.levelToQuality(level))
+    return this.levels
+      .map(level => this.levelToQuality(level))
+      .sort((l1, l2) => l1.bitrate - l2.bitrate)
   }
 
   /** 翻译当前 QualityLevel */

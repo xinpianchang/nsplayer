@@ -5,19 +5,22 @@ export default function createCorePlayer(
   source: SourceWithMimeType,
   video: HTMLVideoElement,
   sources: Source[] = [],
-  fastSwitch = true
+  fastSwitch = true,
+  callback: (corePlayer: ICorePlayer) => ICorePlayer | Promise<ICorePlayer> = id => id
 ): Promise<ICorePlayer> {
   if (isHls(source.mime)) {
     return import('./coreplayer/hlsplayer')
       .then(module => module.HlsPlayer)
-      .then(HlsPlayer => new HlsPlayer(video, source, fastSwitch))
+      .then(HlsPlayer => callback(new HlsPlayer(video, source, fastSwitch)))
   } else if (isDash(source.mime)) {
     return import('./coreplayer/dashplayer')
       .then(module => module.DashPlayer)
-      .then(DashPlayer => new DashPlayer(video, source, fastSwitch))
+      .then(DashPlayer => callback(new DashPlayer(video, source, fastSwitch)))
   } else if (isMp4(source.mime)) {
     if (sources) {
-      // return new NormalPlayer(video, sources)
+      return import('./coreplayer/baseplayer')
+        .then(module => module.BasePlayer)
+        .then(BasePlayer => callback(new BasePlayer(video, sources)))
     } else {
       throw new Error('none video sources')
     }

@@ -6,7 +6,13 @@ import {
   IDisposable,
 } from '@newstudios/common/lifecycle'
 import { Emitter, Event } from '@newstudios/common/event'
-import { BasePlayerWithEvent, VideoEventNameMap, VideoEventNameArray, isSafari } from './types'
+import {
+  BasePlayerWithEvent,
+  VideoEventNameMap,
+  VideoEventNameArray,
+  isSafari,
+  DOMEvent,
+} from './types'
 import { assert } from './types'
 
 export interface NSPlayerOptions {
@@ -20,6 +26,7 @@ export interface IBasePlayer extends IDisposable {
   exitFullscreen(): Promise<void>
   requestFullscreen(options?: FullscreenOptions | undefined): Promise<void>
   readonly fullscreen: boolean
+  readonly onAutoPlayError: Event<DOMEvent>
 }
 
 /**
@@ -73,6 +80,9 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
   private _video: HTMLVideoElement | null = null
   private _disposableVideo = new MutableDisposable()
   private _paused = true
+
+  private readonly _onAutoPlayError = this._register(new Emitter<DOMEvent>())
+  public readonly onAutoPlayError = Event.once(this._onAutoPlayError.event)
 
   // detect pure safari
   protected static _isSafari = isSafari()
@@ -163,17 +173,27 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
 
       const onAutoPlayError = Event.filter(
         Event.once(Event.fromDOMEventEmitter<ErrorEvent>(video, 'error')),
-        ({ error: err }) =>
-          this.autoplay &&
-          !this.muted &&
-          (err.name == 'NotAllowedError' || (err.name == 'AbortError' && BasePlayer._isSafari))
+        evt => {
+          const { error: err = this.error } = evt
+          return (
+            this.autoplay &&
+            !this.muted &&
+            (err.name == 'NotAllowedError' || (err.name == 'AbortError' && BasePlayer._isSafari))
+          )
+        }
       )
 
       onAutoPlayError(
         () => {
-          console.info('mute and re-play')
-          this.muted = true
-          this.play()
+          const err = new window.Event('error', {
+            cancelable: true,
+          })
+          this._onAutoPlayError.fire(err)
+          if (!err.defaultPrevented) {
+            console.info('mute and re-play')
+            this.muted = true
+            this.play()
+          }
         },
         null,
         disposables

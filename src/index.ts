@@ -48,6 +48,7 @@ export interface IPlayer extends BasePlayer {
   readonly requestedQualityId: string
   readonly autoQuality: boolean
   readonly fullscreen: boolean
+  readonly supportAutoQuality: boolean
   container: HTMLElement | null
   sourcePolicy: SourcePolicy
 
@@ -319,6 +320,10 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     return this._requestedQualityId === 'auto'
   }
 
+  public get supportAutoQuality() {
+    return this.corePlayer?.supportAutoQuality || false
+  }
+
   public requestQualityById(id: string) {
     const oldQualityId = this._requestedQualityId
     if (oldQualityId !== id) {
@@ -374,11 +379,19 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       const video = this.withVideo()
       createCorePlayer(source, video, sources, this._abrFastSwitch)
         .then(corePlayer => {
+          if (!isAutoQuality(this._requestedQualityId)) {
+            corePlayer.setQualityById(this._requestedQualityId)
+          } else {
+            // sync with core player qualityId
+            Event.once(corePlayer.onPlayListChange)(() => {
+              this._requestedQualityId = corePlayer.qualityId
+            })
+          }
           this._onPlayListChange.input = corePlayer.onPlayListChange
           this._onQualityChange.input = corePlayer.onQualityChange
           this._onAutoChange.input = corePlayer.onAutoChange
-          this._updateQualityId()
           this._corePlayerRef.value = corePlayer
+          return corePlayer
         })
         .catch(err => console.warn(err))
     } else {

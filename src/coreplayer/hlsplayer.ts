@@ -1,10 +1,5 @@
 import Hls from 'hls.js'
-import {
-  toDisposable,
-  IDisposable,
-  combinedDisposable,
-  MutableDisposable,
-} from '@newstudios/common/lifecycle'
+import { toDisposable, MutableDisposable, DisposableStore } from '@newstudios/common/lifecycle'
 import { CorePlayer, SourceWithMimeType, idToQualityLevel, QualityLevel } from '.'
 import { Event } from '@newstudios/common/event'
 import { onUnexpectedError } from '@newstudios/common/errors'
@@ -127,7 +122,7 @@ export class HlsPlayer extends CorePlayer<Hls.Level> {
   protected onInit(video: HTMLVideoElement, source: SourceWithMimeType) {
     const hlsPlayer = this._hlsPlayer
     if (hlsPlayer) {
-      const disposables: IDisposable[] = []
+      const disposables = new DisposableStore()
       const onManifestParsed = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.MANIFEST_PARSED)
       const onLevelsUpdated = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.LEVEL_UPDATED)
       const onLevelSwitched = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.LEVEL_SWITCHED)
@@ -143,7 +138,7 @@ export class HlsPlayer extends CorePlayer<Hls.Level> {
       hlsPlayer.attachMedia(video)
       hlsPlayer.loadSource(source.src)
 
-      this._register(combinedDisposable(...disposables))
+      this._register(disposables)
     } else {
       this.video.src = source.src
       if (!this.video.canPlayType(source.mime)) {
