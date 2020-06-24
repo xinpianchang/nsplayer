@@ -70,7 +70,7 @@
       font-family: monospace;
       font-weight: 700;
     }
-    div.player-waiting {
+    progress.player-waiting {
       visibility: hidden;
     }
     div.container video {
@@ -94,6 +94,15 @@
     button.player-auto-play-error {
       display: none;
     }
+    div.player-stat {
+      margin: 20px 0 0;
+      border: 1px solid #777777;
+      padding: 3px 6px;
+      box-sizing: border-box;
+    }
+    div.player-stat span {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -112,6 +121,12 @@
     <button class="player-fullscreen">Fullscreen</button>
     <div class="player-volume"></div>
     <button class="player-auto-play-error">恢复声音</button>
+    <div class="player-stat">
+      <span class="viewport-frames"></span>
+      <span class="current-optimal-res"></span>
+      <span class="bandwidth"></span>
+      <span class="codec"></span>
+    </div>
   </div>
   <!-- <script src="../dist/index.umd.js"></script> -->
   <script type="module">
@@ -147,12 +162,12 @@
     window.player = new NSPlayer({
       selector: 'div.container',
       source: [
-        // {
-        //   src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8',
-        // },
-        // {
-        //   src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd',
-        // },
+        {
+          src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8',
+        },
+        {
+          src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd',
+        },
         ...mp4s,
       ],
       autoplay: true,
@@ -284,7 +299,12 @@
     $('.player-current').innerText = qualityIdToText(player.currentQualityId)
 
     function updateTime() {
-      $('.player-time').innerText = NSPlayer.formatTime(player.currentTime, 'm:ss') + ' / ' + NSPlayer.formatTime(player.duration, 'm:ss')
+      const currentTime = NSPlayer.formatTime(player.currentTime, 'm:ss')
+      if (player.duration) {
+        $('.player-time').innerText = currentTime + ' / ' + NSPlayer.formatTime(player.duration, 'm:ss')
+      } else {
+        $('.player-time').innerText = currentTime
+      }
     }
 
     function showEvent(event) {
@@ -307,6 +327,39 @@
       $('.player-volume').innerText = player.muted ? 'Muted' : `Vol ${Math.round(player.volume * 100)} / 100`
     }
 
+    function updateViewPortFrames() {
+      const { width, height } = player.viewport
+      const {
+        totalVideoFrames = 0,
+        droppedVideoFrames = 0,
+      } = player.getVideoPlaybackQuality() || {}
+      $('.player-stat .viewport-frames').innerText = `Viewport / Frames: ${width}x${height} / ${droppedVideoFrames} dropped of ${totalVideoFrames}`
+    }
+
+    function updateCurrentOptimalRes() {
+      const { width = 0, height = 0 } = player.currentQualityLevel || {}
+      const list = player.currentPlayList.slice().sort((l1, l2) => l2.bitrate - l1.bitrate)
+      if (list.length) {
+        $('.player-stat .current-optimal-res').innerText = `Current / Optimal Res: ${width}x${height} / ${list[0].width}x${list[0].height}`
+      } else {
+        $('.player-stat .current-optimal-res').innerText = `Current / Optimal Res: ${width}x${height}`
+      }
+    }
+
+    function updateBandwidthEstimate() {
+      const bandwidth = player.bandwidthEstimate
+      if (!isNaN(bandwidth)) {
+        $('.player-stat .bandwidth').innerText = `Bandwidth: ${(bandwidth / 1024 / 1024).toFixed(2)}Mbps`
+      }
+    }
+
+    function updatePlayerStat() {
+      updateViewPortFrames()
+      updateCurrentOptimalRes()
+      updateBandwidthEstimate()
+      
+    }
+
     updatePlayBtn()
     updateVolume()
 
@@ -319,8 +372,8 @@
     player.onEnded(showEvent)
     player.onVolumeChange(showEvent)
     // player.onDurationChange(showEvent)
-    player.onTimeUpdate(showEvent)
-    player.onProgress(showEvent)
+    // player.onTimeUpdate(showEvent)
+    // player.onProgress(showEvent)
     player.onSeeking(showEvent)
     player.onSeeked(showEvent)
     player.onCanPlay(showEvent)
@@ -336,6 +389,8 @@
     player.onPlay(updatePlayBtn)
     player.onPause(updatePlayBtn)
     player.onVolumeChange(updateVolume)
+
+    setInterval(updatePlayerStat, 500)
 
     // evt.data: {
     //   supportAuto: true,

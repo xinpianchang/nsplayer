@@ -2,6 +2,10 @@
 import { Event as VSEvent } from '@newstudios/common/event'
 
 export type DOMEvent = Event
+export type Size = {
+  width: number
+  height: number
+}
 
 export const VideoEventNameMap = {
   onEncypted: 'encrypted',

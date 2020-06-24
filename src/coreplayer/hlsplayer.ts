@@ -150,6 +150,11 @@ export class HlsPlayer extends CorePlayer<Hls.Level> {
     }
   }
 
+  public get bandwidthEstimate(): number {
+    const player = this._hlsPlayer as any
+    return player?.bandwidthEstimate || NaN
+  }
+
   public get name() {
     return `HLSPlayer (${Hls.version})`
   }

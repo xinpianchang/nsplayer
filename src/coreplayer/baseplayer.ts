@@ -1,7 +1,7 @@
 import { CorePlayer, SourceWithMimeType, QualityLevel, idToQualityLevel } from '.'
 import { Event } from '@newstudios/common/event'
-import { toDisposable, DisposableStore } from '@newstudios/common/lifecycle'
-import { Source } from '../types'
+import { toDisposable, DisposableStore, MutableDisposable } from '@newstudios/common/lifecycle'
+import { Source, DOMEvent } from '../types'
 
 export interface SourceWithDetail extends SourceWithMimeType {
   width: number
@@ -13,6 +13,7 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
   private _currentLevelIndex: number
   private _nextLevelIndex: number
   private _startLevelIndex: number
+  private _changeQualityDisposable = new MutableDisposable()
   private _sources: SourceWithDetail[]
 
   constructor(private _video: HTMLVideoElement, sources: Source[]) {
@@ -32,6 +33,7 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
     this._currentLevelIndex = 0
     this._nextLevelIndex = 0
     this._startLevelIndex = 0
+    this._register(this._changeQualityDisposable)
     this._register(toDisposable(() => _video.load()))
   }
 
@@ -89,9 +91,27 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
     this._nextLevelIndex = index
     const source = this.nextLevel
     if (source) {
-      const currentTime = this._video.currentTime
-      this._video.src = source.src
-      this._video.currentTime = currentTime
+      const video = this._video
+      const currentTime = video.currentTime
+      const paused = video.paused
+      const autoplay = video.autoplay
+      video.pause()
+      video.autoplay = true
+      video.src = source.src
+
+      const reset = () => {
+        this._changeQualityDisposable.value = undefined
+        video.currentTime = currentTime
+        video.autoplay = autoplay
+        if (paused) {
+          video.pause()
+        } else {
+          video.play()
+        }
+      }
+
+      const onCanPlay = Event.fromDOMEventEmitter<DOMEvent>(video, 'canplay')
+      this._changeQualityDisposable.value = onCanPlay(reset)
     } else {
       console.error(`pause the video due to the next level ${index} unresolved in normalplayer`)
       this.video.pause()
@@ -132,6 +152,10 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
     } else {
       throw new Error(`cannot play this video with mime type ${source.mime}`)
     }
+  }
+
+  public get bandwidthEstimate(): number {
+    return NaN
   }
 
   public get name(): string {

@@ -12,7 +12,7 @@ import {
   DisposableStore,
 } from '@newstudios/common/lifecycle'
 import { Emitter, Event, Relay, PauseableEmitter } from '@newstudios/common/event'
-import { Source, getMimeType, formatTime } from './types'
+import { Source, getMimeType, formatTime, Size } from './types'
 import {
   ICorePlayer,
   PlayList,
@@ -45,10 +45,13 @@ export interface IPlayer extends BasePlayer {
   readonly currentPlayerName: string | undefined
   readonly currentQualityId: string
   readonly currentPlayList: PlayList
+  readonly currentQualityLevel?: QualityLevel
   readonly requestedQualityId: string
   readonly autoQuality: boolean
   readonly fullscreen: boolean
   readonly supportAutoQuality: boolean
+  readonly viewport: Size
+  readonly bandwidthEstimate: number
   container: HTMLElement | null
   sourcePolicy: SourcePolicy
 
@@ -143,6 +146,43 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       return isSameLevel(qualityLevel, requestedQualityLevel)
     }
   )
+
+  public get viewport(): Size {
+    const el = this._el
+    const video = this.video
+    if (el && video) {
+      const { offsetWidth, offsetHeight } = el
+      const { videoWidth, videoHeight } = video
+      if (offsetWidth && offsetHeight && videoWidth && videoHeight) {
+        if (offsetWidth * videoHeight > offsetHeight * videoWidth) {
+          return {
+            width: ~~((offsetHeight * videoWidth) / videoHeight),
+            height: offsetHeight,
+          }
+        } else {
+          return {
+            width: offsetWidth,
+            height: ~~((offsetWidth * videoHeight) / videoWidth),
+          }
+        }
+      }
+    }
+    return {
+      width: 0,
+      height: 0,
+    }
+  }
+
+  public get bandwidthEstimate(): number {
+    if (this.corePlayer) {
+      return this.corePlayer.bandwidthEstimate
+    }
+    return NaN
+  }
+
+  public get currentQualityLevel() {
+    return idToQualityLevel(this.currentQualityId)
+  }
 
   constructor(readonly opt: NSPlayerOptions = {}) {
     super()
@@ -261,6 +301,21 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     return this._sourcePolicy
   }
 
+  /** when attaching the video, call super.doAttach for just append the video to the child */
+  protected doAttach(video: HTMLVideoElement) {
+    const el = this._el
+    if (el) {
+      el.innerHTML = ''
+      el.appendChild(video)
+    }
+  }
+
+  /** when detaching the video from container */
+  protected doDetach(video: HTMLVideoElement) {
+    // do nothing
+    video.remove()
+  }
+
   private _registerContainerListeners(el: HTMLElement | null) {
     const video = this.withVideo()
     if (el) {
@@ -271,14 +326,13 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       const onFullscreenError = Event.fromDOMEventEmitter(el, 'fullscreenerror')
       const disposables: IDisposable[] = []
 
-      el.innerHTML = ''
-      el.appendChild(video)
-
       onFullscreenChange(fullscreenChangeHandler, null, disposables)
       onFullscreenError(fullscreenErrorHandler, null, disposables)
+      this.doAttach(video)
       this._onVideoAttach.fire(video)
 
       return toDisposable(() => {
+        this.doDetach(video)
         detachVideoHandler()
         dispose(disposables)
       })
@@ -381,7 +435,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
         .then(corePlayer => {
           if (!isAutoQuality(this._requestedQualityId)) {
             corePlayer.setQualityById(this._requestedQualityId)
-          } else {
+          } else if (!corePlayer.supportAutoQuality) {
             // sync with core player qualityId
             Event.once(corePlayer.onPlayListChange)(() => {
               this._requestedQualityId = corePlayer.qualityId
@@ -391,6 +445,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
           this._onQualityChange.input = corePlayer.onQualityChange
           this._onAutoChange.input = corePlayer.onAutoChange
           this._corePlayerRef.value = corePlayer
+
           return corePlayer
         })
         .catch(err => console.warn(err))

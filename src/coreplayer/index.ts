@@ -63,8 +63,14 @@ export interface ICorePlayer extends IDisposable {
   /** 是否初始化完成 playList，并准备就绪 */
   readonly ready: boolean
 
+  /** 获取估算的带宽 */
+  readonly bandwidthEstimate: number
+
   /** 根据质量ID设定播放质量，ID 为 auto 表示自动切换 */
   setQualityById(id: string): void
+
+  /** 如何 retry */
+  // retry(): void
 }
 
 /**
@@ -91,7 +97,7 @@ export function idToQualityLevel(id: string): QualityLevel | undefined {
  * @param level 播放质量级别
  */
 export function qualityLevelToId(level: QualityLevel): string {
-  let id = `br${level.bitrate}-${level.width}x${level.height}`
+  let id = `br${~~level.bitrate}-${~~level.width}x${~~level.height}`
   if (level.type) {
     id = `${id}-${level.type}`
   }
@@ -144,6 +150,7 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
 
   public abstract get name(): string
   public abstract get supportAutoQuality(): boolean
+  public abstract get bandwidthEstimate(): number
 
   protected abstract get levels(): Level[]
   protected abstract get currentLevel(): Level | undefined

@@ -171,59 +171,55 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
         })
       }
 
-      const onAutoPlayError = Event.filter(
-        Event.once(Event.fromDOMEventEmitter<ErrorEvent>(video, 'error')),
-        evt => {
-          const { error: err = this.error } = evt
-          return (
-            this.autoplay &&
-            !this.muted &&
-            (err.name == 'NotAllowedError' || (err.name == 'AbortError' && BasePlayer._isSafari))
-          )
-        }
-      )
-
-      onAutoPlayError(
-        () => {
-          const err = new window.Event('error', {
-            cancelable: true,
-          })
-          this._onAutoPlayError.fire(err)
-          if (!err.defaultPrevented) {
-            console.info('mute and re-play')
-            this.muted = true
-            this.play()
-          }
-        },
-        null,
-        disposables
-      )
-
       Object.defineProperty(video, '_fixedPlay', { value: true })
     }
+
+    const onAutoPlayError = Event.filter(
+      Event.once(Event.fromDOMEventEmitter<ErrorEvent>(video, 'error')),
+      evt => {
+        const { error: err = this.error } = evt
+        return (
+          this.autoplay &&
+          !this.muted &&
+          (err.name == 'NotAllowedError' || (err.name == 'AbortError' && BasePlayer._isSafari))
+        )
+      }
+    )
+
+    onAutoPlayError(
+      () => {
+        const err = new window.Event('error', {
+          cancelable: true,
+        })
+        this._onAutoPlayError.fire(err)
+        if (!err.defaultPrevented) {
+          console.info('mute and re-play')
+          this.muted = true
+          this.play()
+        }
+      },
+      null,
+      disposables
+    )
   }
 
   private _fixPauseEvent(video: HTMLVideoElement, disposables?: IDisposable[]) {
-    if (!('_fixedPause' in video)) {
-      const target = this as any
-      const setPaused = (paused: boolean, evt: any) => {
-        if (this._paused !== paused) {
-          this._paused = paused
-          if (paused) {
-            target._onPause.fire(evt)
-          } else {
-            target._onPlay.fire(evt)
-          }
+    const target = this as any
+    const setPaused = (paused: boolean, evt: any) => {
+      if (this._paused !== paused) {
+        this._paused = paused
+        if (paused) {
+          target._onPause.fire(evt)
+        } else {
+          target._onPlay.fire(evt)
         }
       }
-
-      const onPlay = Event.fromDOMEventEmitter(video, 'play')
-      onPlay((evt: any) => setPaused(false, evt), null, disposables)
-      const onPause = Event.fromDOMEventEmitter(video, 'pause')
-      onPause((evt: any) => setPaused(true, evt), null, disposables)
-
-      Object.defineProperty(video, '_fixedPause', { value: true })
     }
+
+    const onPlay = Event.fromDOMEventEmitter(video, 'play')
+    onPlay((evt: any) => setPaused(false, evt), null, disposables)
+    const onPause = Event.fromDOMEventEmitter(video, 'pause')
+    onPause((evt: any) => setPaused(true, evt), null, disposables)
   }
 
   /**

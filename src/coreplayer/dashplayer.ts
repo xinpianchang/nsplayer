@@ -7,8 +7,65 @@ import {
   BitrateInfo,
   QualityChangeRequestedEvent,
   QualityChangeRenderedEvent,
+  MediaType,
 } from 'dashjs'
 import { Event } from '@newstudios/common/event'
+
+type MetricRequest = {
+  interval: number
+  responsecode: number
+  trequest: Date
+  tresponse: Date
+  url: string
+  type: 'MediaSegment'
+  _tfinish: Date
+  _stream: MediaType
+  _mediaduration: number
+  _responseHeaders: string
+  _quality: number
+}
+
+function caculateBandWidthFor(player: MediaPlayerClass, type: MediaType) {
+  const metrics = player.getDashMetrics()
+  const requests = metrics.getHttpRequests(type) as MetricRequest[]
+
+  const lastCount = 4
+
+  const requestWindow = requests
+    .slice(-lastCount * 5)
+    .filter(req => {
+      return (
+        req.responsecode >= 200 &&
+        req.responsecode < 300 &&
+        req.type === 'MediaSegment' &&
+        req._stream === type &&
+        !!req._mediaduration
+      )
+    })
+    .slice(-lastCount)
+
+  const downloadLengths = requestWindow.map(req => {
+    const item = req._responseHeaders.split('\n').find(item => item.match(/^content-length\s*:/i))
+    let length = 0
+    if (item) {
+      length = parseInt(item.split(':')[1].trim()) * 8
+    }
+    return length
+  })
+
+  const downloadTimes = requestWindow.map(req => {
+    return Math.abs(req._tfinish.getTime() - req.tresponse.getTime()) / 1000
+  })
+
+  const size = downloadLengths.reduce((a, b) => a + b, 0)
+  const time = downloadTimes.reduce((a, b) => a + b, 0)
+
+  return Math.round(size / time)
+}
+
+function caculateBandWidth(player: MediaPlayerClass): number {
+  return caculateBandWidthFor(player, 'video') + caculateBandWidthFor(player, 'audio')
+}
 
 export class DashPlayer extends CorePlayer<BitrateInfo> {
   public static setDefaultMediaPlayerFactory(factory: MediaPlayerFactory) {
@@ -175,6 +232,10 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
     )
 
     this._register(disposables)
+  }
+
+  public get bandwidthEstimate(): number {
+    return caculateBandWidth(this._dashPlayer)
   }
 
   public get name() {

@@ -66,7 +66,7 @@
     "@rollup/plugin-commonjs": "^13.0.0",
     "@rollup/plugin-json": "^4.0.3",
     "@rollup/plugin-node-resolve": "^8.0.1",
-    "@types/hls.js": "^0.12.6",
+    "@types/hls.js": "^0.13.0",
     "@types/jest": "^25.2.1",
     "@types/rollup-plugin-node-builtins": "^2.1.1",
     "@typescript-eslint/eslint-plugin": "^2.29.0",
