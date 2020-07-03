@@ -1304,10 +1304,10 @@
     mkdirp "^0.5.1"
     rimraf "^2.5.2"
 
-"@newstudios/common@^0.1.4":
-  version "0.1.4"
-  resolved "https://registry.npmjs.org/@newstudios/common/-/common-0.1.4.tgz#9a801d4201be763fa8cca1a9b91b5bcc28973b03"
-  integrity sha512-LFaPHf4yHL45Bl4imrDKfhDHLU0hCFp04tM0bq0lisePyIOdZ/EQrLYwWcqNVQjuyU470YGhY7eAqE1dL+n3RQ==
+"@newstudios/common@^0.1.5":
+  version "0.1.5"
+  resolved "https://registry.npmjs.org/@newstudios/common/-/common-0.1.5.tgz#495aeca66078db6bded71ba7e5e5a6fbf24051da"
+  integrity sha512-wmz58Qv7f7ew3x6rOcsuejrbWow3Fze2C514z6c3VsM2AKNXBwW0c0Ksda8IzuPxOVsCJlqhMzYodBGy35hMDQ==
 
 "@rollup/plugin-babel@^5.0.2":
   version "5.0.2"

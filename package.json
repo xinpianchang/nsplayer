@@ -90,7 +90,7 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "@newstudios/common": "^0.1.4",
+    "@newstudios/common": "^0.1.5",
     "dashjs": "^3.1.1",
     "delegates": "^1.0.0",
     "hls.js": "^0.13.2"
