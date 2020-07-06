@@ -37,7 +37,6 @@ export interface BasePlayer extends BasePlayerWithEvent {
   poster: string
   readonly videoHeight: number
   readonly videoWidth: number
-  audioTracks: AudioTrackList
   autoplay: boolean
   buffered: TimeRanges
   controls: boolean
@@ -58,8 +57,6 @@ export interface BasePlayer extends BasePlayerWithEvent {
   readonly readyState: number
   readonly seekable: TimeRanges
   readonly seeking: boolean
-  textTracks: TextTrackList
-  videoTracks: VideoTrackList
   volume: number
 
   getVideoPlaybackQuality(): VideoPlaybackQuality
@@ -232,11 +229,19 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
   }
 
   public toggle() {
-    if (this._paused) {
+    if (this.paused) {
       this.play()
     } else {
       this.pause()
     }
+  }
+
+  public reset() {
+    if (this.video) {
+      this.video?.removeAttribute('src')
+      this.load()
+    }
+    this._paused = true
   }
 }
 
@@ -245,7 +250,6 @@ delegates(BasePlayer.prototype, 'video')
   .getter('videoHeight')
   .getter('videoWidth')
   .method('getVideoPlaybackQuality')
-  .access('audioTracks')
   .access('autoplay')
   .access('buffered')
   .access('controls')
@@ -266,8 +270,6 @@ delegates(BasePlayer.prototype, 'video')
   .getter('readyState')
   .getter('seekable')
   .getter('seeking')
-  .access('textTracks')
-  .access('videoTracks')
   .access('volume')
   .method('addTextTrack')
   .method('canPlayType')

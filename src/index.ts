@@ -56,7 +56,7 @@ export interface IPlayer extends BasePlayer {
   sourcePolicy: SourcePolicy
 
   /** 提供所有可供播放的资源，请尽量提供 mime type 以及 src */
-  setSource(sources: Source | Source[]): void
+  setSource(sources: Source | Source[]): boolean
 
   /** 根据 id 请求播放质量，auto 表示自动，id 在各类核心播放器之间通用 */
   requestQualityById(id: string): void
@@ -417,10 +417,9 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     }
   }
 
-  public setSource(sources: Source | Source[]) {
+  public setSource(sources: Source | Source[]): boolean {
     if (!Array.isArray(sources)) {
-      this.setSource([sources])
-      return
+      return this.setSource([sources])
     }
 
     this._sources = sources
@@ -449,8 +448,10 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
           return corePlayer
         })
         .catch(err => console.warn(err))
-    } else {
-      throw new Error('should provide the mime type')
+      return true
     }
+
+    this.reset()
+    return false
   }
 }
