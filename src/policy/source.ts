@@ -1,7 +1,7 @@
 import { Source, isHls, getMimeType, isDash, isMp4, isSafari } from '../types'
 import { SourceWithMimeType } from '../coreplayer'
 
-export type SourcePolicy = (sources: Source[]) => SourceWithMimeType
+export type SourcePolicy = (sources: Source[]) => SourceWithMimeType | undefined
 
 export interface SourceMap {
   dash: SourceWithMimeType[]
@@ -73,6 +73,4 @@ export const DefaultSourcePolicy: SourcePolicy = sources => {
   if (sourceMap.mp4.length) {
     return sourceMap.mp4[0]
   }
-
-  throw new Error('no supported source')
 }

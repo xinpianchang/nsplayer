@@ -427,28 +427,30 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     // policy to choose coreplayer
     const source = this._sourcePolicy(sources)
 
-    const mime = source.mime ?? getMimeType(source.src)
-    if (mime) {
-      const video = this.withVideo()
-      createCorePlayer(source, video, sources, this._abrFastSwitch)
-        .then(corePlayer => {
-          if (!isAutoQuality(this._requestedQualityId)) {
-            corePlayer.setQualityById(this._requestedQualityId)
-          } else if (!corePlayer.supportAutoQuality) {
-            // sync with core player qualityId
-            Event.once(corePlayer.onPlayListChange)(() => {
-              this._requestedQualityId = corePlayer.qualityId
-            })
-          }
-          this._onPlayListChange.input = corePlayer.onPlayListChange
-          this._onQualityChange.input = corePlayer.onQualityChange
-          this._onAutoChange.input = corePlayer.onAutoChange
-          this._corePlayerRef.value = corePlayer
+    if (source) {
+      const mime = source.mime ?? getMimeType(source.src)
+      if (mime) {
+        const video = this.withVideo()
+        createCorePlayer(source, video, sources, this._abrFastSwitch)
+          .then(corePlayer => {
+            if (!isAutoQuality(this._requestedQualityId)) {
+              corePlayer.setQualityById(this._requestedQualityId)
+            } else if (!corePlayer.supportAutoQuality) {
+              // sync with core player qualityId
+              Event.once(corePlayer.onPlayListChange)(() => {
+                this._requestedQualityId = corePlayer.qualityId
+              })
+            }
+            this._onPlayListChange.input = corePlayer.onPlayListChange
+            this._onQualityChange.input = corePlayer.onQualityChange
+            this._onAutoChange.input = corePlayer.onAutoChange
+            this._corePlayerRef.value = corePlayer
 
-          return corePlayer
-        })
-        .catch(err => console.warn(err))
-      return true
+            return corePlayer
+          })
+          .catch(err => console.warn(err))
+        return true
+      }
     }
 
     this.reset()
