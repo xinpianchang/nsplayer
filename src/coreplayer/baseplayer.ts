@@ -1,7 +1,7 @@
 import { CorePlayer, SourceWithMimeType, QualityLevel, idToQualityLevel } from '.'
 import { Event } from '@newstudios/common/event'
 import { toDisposable, DisposableStore, MutableDisposable } from '@newstudios/common/lifecycle'
-import { Source, DOMEvent } from '../types'
+import { Source } from '../types'
 
 export interface SourceWithDetail extends SourceWithMimeType {
   width: number
@@ -110,7 +110,7 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
         }
       }
 
-      const onCanPlay = Event.fromDOMEventEmitter<DOMEvent>(video, 'canplay')
+      const onCanPlay = Event.fromDOMEventEmitter<globalThis.Event>(video, 'canplay')
       this._changeQualityDisposable.value = onCanPlay(reset)
     } else {
       console.error(`pause the video due to the next level ${index} unresolved in normalplayer`)

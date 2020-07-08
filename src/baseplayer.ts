@@ -6,13 +6,7 @@ import {
   IDisposable,
 } from '@newstudios/common/lifecycle'
 import { Emitter, Event } from '@newstudios/common/event'
-import {
-  BasePlayerWithEvent,
-  VideoEventNameMap,
-  VideoEventNameArray,
-  isSafari,
-  DOMEvent,
-} from './types'
+import { BasePlayerWithEvent, VideoEventNameMap, VideoEventNameArray, isSafari } from './types'
 import { assert } from './types'
 
 export interface NSPlayerOptions {
@@ -23,10 +17,19 @@ export interface IBasePlayer extends IDisposable {
   video: HTMLVideoElement | null
 
   toggle(): void
-  exitFullscreen(): Promise<void>
+
+  togglePictureInPicture(): void
+  requestPictureInPicture(): Promise<void>
+  exitPictureInPicture(): Promise<void>
+  readonly supportPictureInPicture: boolean
+  readonly pictureInPicture: boolean
+
+  toggleFullscreen(): void
   requestFullscreen(options?: FullscreenOptions | undefined): Promise<void>
+  exitFullscreen(): Promise<void>
   readonly fullscreen: boolean
-  readonly onAutoPlayError: Event<DOMEvent>
+
+  readonly onAutoPlayError: Event<globalThis.Event>
 }
 
 /**
@@ -73,16 +76,80 @@ export interface BasePlayer extends BasePlayerWithEvent {
   /** video delegation end */
 }
 
+/** fix auto play policy, when autoplay policy error happened, just set muted true and replay */
+function fixAutoPlayPolicy(this: BasePlayer, video: HTMLVideoElement, disposables?: IDisposable[]) {
+  if (!('_fixedPlay' in video)) {
+    const play = video.play
+    video.play = () => {
+      return play.call(video).catch((error: Error) => {
+        video.dispatchEvent(
+          new ErrorEvent('error', {
+            error,
+            message: error.message,
+          })
+        )
+      })
+    }
+
+    Object.defineProperty(video, '_fixedPlay', { value: true, enumerable: false })
+  }
+
+  const onAutoPlayError = Event.filter(
+    Event.once(Event.fromDOMEventEmitter<ErrorEvent>(video, 'error')),
+    evt => {
+      const { error: err = this.error } = evt
+      return (
+        this.autoplay &&
+        !this.muted &&
+        (err.name == 'NotAllowedError' || (err.name == 'AbortError' && isSafari()))
+      )
+    }
+  )
+
+  onAutoPlayError(
+    () => {
+      const err = new window.Event('error', {
+        cancelable: true,
+      })
+      const onAutoPlayError: Emitter<globalThis.Event> = (this as any)._onAutoPlayError
+      onAutoPlayError.fire(err)
+      if (!err.defaultPrevented) {
+        this.muted = true
+        this.play()
+      }
+    },
+    null,
+    disposables
+  )
+}
+
+/** fix safari pause event twice issue */
+function fixPauseEvent(this: BasePlayer, video: HTMLVideoElement, disposables?: IDisposable[]) {
+  const target = this as any
+  target._paused = video.paused
+  const setPaused = (paused: boolean, evt: globalThis.Event) => {
+    if (target._paused !== paused) {
+      target._paused = paused
+      if (paused) {
+        target._onPause.fire(evt)
+      } else {
+        target._onPlay.fire(evt)
+      }
+    }
+  }
+
+  const onPlay = Event.fromDOMEventEmitter<globalThis.Event>(video, 'play')
+  onPlay(evt => setPaused(false, evt), null, disposables)
+  const onPause = Event.fromDOMEventEmitter<globalThis.Event>(video, 'pause')
+  onPause(evt => setPaused(true, evt), null, disposables)
+}
+
 export abstract class BasePlayer extends Disposable implements IBasePlayer {
   private _video: HTMLVideoElement | null = null
   private _disposableVideo = new MutableDisposable()
-  private _paused = true
 
-  private readonly _onAutoPlayError = this._register(new Emitter<DOMEvent>())
+  private readonly _onAutoPlayError = this._register(new Emitter<globalThis.Event>())
   public readonly onAutoPlayError = Event.once(this._onAutoPlayError.event)
-
-  // detect pure safari
-  protected static _isSafari = isSafari()
 
   constructor() {
     super()
@@ -100,15 +167,65 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
     })
   }
 
-  public exitFullscreen(): Promise<void> {
-    return document.exitFullscreen()
-  }
-
-  public get fullscreen() {
-    return document.fullscreen
-  }
+  public abstract get fullscreen(): boolean
 
   public abstract requestFullscreen(options?: FullscreenOptions | undefined): Promise<void>
+
+  public exitFullscreen(): Promise<void> {
+    if (this.fullscreen) {
+      return document.exitFullscreen()
+    }
+    return Promise.resolve()
+  }
+
+  public toggleFullscreen() {
+    if (this.fullscreen) {
+      this.requestFullscreen()
+    } else {
+      this.exitFullscreen()
+    }
+  }
+
+  public get pictureInPicture(): boolean {
+    return !!this.video && this.video === document.pictureInPictureElement
+  }
+
+  public requestPictureInPicture(): Promise<void> {
+    const video = this.withVideo()
+    if (video.requestPictureInPicture) {
+      return video.requestPictureInPicture()
+    }
+    return Promise.reject(new Error('picture in picture not supported'))
+  }
+
+  public exitPictureInPicture(): Promise<void> {
+    if (this.pictureInPicture) {
+      return document.exitPictureInPicture()
+    }
+    return Promise.resolve()
+  }
+
+  public get supportPictureInPicture() {
+    return !!HTMLVideoElement.prototype.requestPictureInPicture
+  }
+
+  public togglePictureInPicture() {
+    if (this.supportPictureInPicture) {
+      if (this.pictureInPicture) {
+        //关闭
+        this.exitPictureInPicture().catch((error: Error) => {
+          console.warn(error, 'Video failed to leave Picture-in-Picture mode.')
+        })
+      } else {
+        //开启
+        this.requestPictureInPicture().catch((error: Error) => {
+          console.warn(error, 'Video failed to enter Picture-in-Picture mode.')
+        })
+      }
+    } else {
+      console.warn('Picture in picture is not supported')
+    }
+  }
 
   get video() {
     return this._video
@@ -125,7 +242,6 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
   private _registerVideoListeners(video: HTMLVideoElement | null) {
     this._video = video
     if (video) {
-      this._paused = video.paused
       const player = this as any
       const disposables: IDisposable[] = []
 
@@ -144,79 +260,13 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
       })
 
       // fix auto play rejection issue
-      this._fixAutoPlayPolicy(video, disposables)
+      fixAutoPlayPolicy.call(this, video, disposables)
 
       // fix pause event twice issue in safari
-      this._fixPauseEvent(video, disposables)
+      fixPauseEvent.call(this, video, disposables)
 
       return combinedDisposable(...disposables)
     }
-  }
-
-  // when autoplay policy error happened, just set muted true and replay
-  private _fixAutoPlayPolicy(video: HTMLVideoElement, disposables?: IDisposable[]) {
-    if (!('_fixedPlay' in video)) {
-      const play = video.play
-      video.play = () => {
-        return play.call(video).catch((error: Error) => {
-          video.dispatchEvent(
-            new ErrorEvent('error', {
-              error,
-              message: error.message,
-            })
-          )
-        })
-      }
-
-      Object.defineProperty(video, '_fixedPlay', { value: true })
-    }
-
-    const onAutoPlayError = Event.filter(
-      Event.once(Event.fromDOMEventEmitter<ErrorEvent>(video, 'error')),
-      evt => {
-        const { error: err = this.error } = evt
-        return (
-          this.autoplay &&
-          !this.muted &&
-          (err.name == 'NotAllowedError' || (err.name == 'AbortError' && BasePlayer._isSafari))
-        )
-      }
-    )
-
-    onAutoPlayError(
-      () => {
-        const err = new window.Event('error', {
-          cancelable: true,
-        })
-        this._onAutoPlayError.fire(err)
-        if (!err.defaultPrevented) {
-          console.info('mute and re-play')
-          this.muted = true
-          this.play()
-        }
-      },
-      null,
-      disposables
-    )
-  }
-
-  private _fixPauseEvent(video: HTMLVideoElement, disposables?: IDisposable[]) {
-    const target = this as any
-    const setPaused = (paused: boolean, evt: any) => {
-      if (this._paused !== paused) {
-        this._paused = paused
-        if (paused) {
-          target._onPause.fire(evt)
-        } else {
-          target._onPlay.fire(evt)
-        }
-      }
-    }
-
-    const onPlay = Event.fromDOMEventEmitter(video, 'play')
-    onPlay((evt: any) => setPaused(false, evt), null, disposables)
-    const onPause = Event.fromDOMEventEmitter(video, 'pause')
-    onPause((evt: any) => setPaused(true, evt), null, disposables)
   }
 
   /**
@@ -238,10 +288,41 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
 
   public reset() {
     if (this.video) {
+      this.video.pause()
       this.video?.removeAttribute('src')
       this.load()
     }
-    this._paused = true
+  }
+
+  public get bufferedTime() {
+    const c = this.currentTime
+    if (this.buffered.length === 0) {
+      return c
+    }
+    let i = 0
+    let j = this.buffered.length
+
+    // start0
+    while (i < j) {
+      const idx = (i + j) >> 1
+      const start = this.buffered.start(idx)
+      if (c > start) {
+        i = idx + 1
+      } else if (c < start) {
+        j = idx
+      } else {
+        return this.buffered.end(i)
+      }
+    }
+
+    const idx = i - 1
+
+    if (idx >= this.buffered.length) {
+      return c
+    }
+
+    const end = this.buffered.end(idx)
+    return end < c ? c : end
   }
 }
 

@@ -125,6 +125,7 @@
       <span class="viewport-frames"></span>
       <span class="current-optimal-res"></span>
       <span class="bandwidth"></span>
+      <span class="bufferhealth"></span>
       <span class="codec"></span>
     </div>
   </div>
@@ -353,11 +354,15 @@
       }
     }
 
+    function updateBufferHealth() {
+      $('.player-stat .bufferhealth').innerText = `Buffer Health: ${(player.bufferedTime - player.currentTime).toFixed(2)}s`
+    }
+
     function updatePlayerStat() {
       updateViewPortFrames()
       updateCurrentOptimalRes()
       updateBandwidthEstimate()
-      
+      updateBufferHealth()
     }
 
     updatePlayBtn()

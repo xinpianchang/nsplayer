@@ -1,10 +1,25 @@
 /* eslint-disable no-constant-condition */
-import { Event as VSEvent } from '@newstudios/common/event'
+import { Event } from '@newstudios/common/event'
 
-export type DOMEvent = Event
 export type Size = {
   width: number
   height: number
+}
+
+declare global {
+  interface HTMLMediaElementEventMap {
+    enterpictureinpicture: globalThis.Event
+    leavepictureinpicture: globalThis.Event
+  }
+
+  interface Document {
+    pictureInPictureElement: HTMLVideoElement | null
+    exitPictureInPicture(): Promise<void>
+  }
+
+  interface HTMLVideoElement {
+    requestPictureInPicture?: () => Promise<void>
+  }
 }
 
 export const VideoEventNameMap = {
@@ -32,13 +47,14 @@ export const VideoEventNameMap = {
   onTimeUpdate: 'timeupdate',
   onVolumeChange: 'volumechange',
   onWaiting: 'waiting',
+  onEnterPictureInPicture: 'enterpictureinpicture',
+  onLeavePictureInPicture: 'leavepictureinpicture',
 } as const
 
 export type VideoEventNameMap = typeof VideoEventNameMap
+type BasePlayerEventName = keyof VideoEventNameMap
 export type BasePlayerWithEvent = {
-  readonly [key in keyof VideoEventNameMap]: VSEvent<
-    HTMLVideoElementEventMap[VideoEventNameMap[key]]
-  >
+  readonly [key in BasePlayerEventName]: Event<HTMLMediaElementEventMap[VideoEventNameMap[key]]>
 }
 
 export type VideoEventName = keyof VideoEventNameMap

@@ -11,6 +11,12 @@ import {
 } from 'dashjs'
 import { Event } from '@newstudios/common/event'
 
+type Trace = {
+  b: [number]
+  d: number
+  s: Date
+}
+
 type MetricRequest = {
   interval: number
   responsecode: number
@@ -23,6 +29,15 @@ type MetricRequest = {
   _mediaduration: number
   _responseHeaders: string
   _quality: number
+  trace: Trace[]
+}
+
+function getBytesLength(request: MetricRequest) {
+  return request.trace.reduce((a, b) => a + b.b[0], 0)
+}
+
+function getTime(request: MetricRequest) {
+  return request.trace.reduce((a, b) => a + b.d, 0)
 }
 
 function caculateBandWidthFor(player: MediaPlayerClass, type: MediaType) {
@@ -35,27 +50,20 @@ function caculateBandWidthFor(player: MediaPlayerClass, type: MediaType) {
     .slice(-lastCount * 5)
     .filter(req => {
       return (
-        req.responsecode >= 200 &&
-        req.responsecode < 300 &&
         req.type === 'MediaSegment' &&
         req._stream === type &&
-        !!req._mediaduration
+        req.trace.length > 1 &&
+        req._tfinish.getTime() - req.tresponse.getTime() > 0
       )
     })
     .slice(-lastCount)
 
-  const downloadLengths = requestWindow.map(req => {
-    const item = req._responseHeaders.split('\n').find(item => item.match(/^content-length\s*:/i))
-    let length = 0
-    if (item) {
-      length = parseInt(item.split(':')[1].trim()) * 8
-    }
-    return length
-  })
+  if (requestWindow.length === 0) {
+    return 0
+  }
 
-  const downloadTimes = requestWindow.map(req => {
-    return Math.abs(req._tfinish.getTime() - req.tresponse.getTime()) / 1000
-  })
+  const downloadLengths = requestWindow.map(req => getBytesLength(req) * 8)
+  const downloadTimes = requestWindow.map(req => getTime(req) / 1000)
 
   const size = downloadLengths.reduce((a, b) => a + b, 0)
   const time = downloadTimes.reduce((a, b) => a + b, 0)

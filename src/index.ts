@@ -248,6 +248,13 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     return this.corePlayer?.name
   }
 
+  public get fullscreen() {
+    if (this._el) {
+      return this._el === document.fullscreenElement
+    }
+    return false
+  }
+
   public requestFullscreen(options?: FullscreenOptions | undefined) {
     if (this._el) {
       return this._el.requestFullscreen(options)
@@ -255,13 +262,6 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     const error = new Error('container not initialized')
     this._onFullscreenError.fire()
     return Promise.reject(error)
-  }
-
-  public get fullscreen() {
-    if (this._el) {
-      return document.fullscreenElement === this._el
-    }
-    return false
   }
 
   private initHTMLVideoElement() {
