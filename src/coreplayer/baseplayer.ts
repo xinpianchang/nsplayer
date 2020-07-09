@@ -18,18 +18,20 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
 
   constructor(private _video: HTMLVideoElement, sources: Source[]) {
     super(_video, sources[0] as SourceWithMimeType)
-    this._sources = sources.map(({ bitrate, width, height, src, mime = 'video/mp4' }) => {
-      if (!bitrate || !width || !height) {
-        throw new Error(`we need bitrate / width / height info for source ${src}`)
-      }
-      return {
-        bitrate,
-        width,
-        height,
-        src,
-        mime,
-      }
-    })
+    this._sources = sources
+      .map(({ bitrate, width, height, src, mime = 'video/mp4' }) => {
+        if (!bitrate || !width || !height) {
+          throw new Error(`we need bitrate / width / height info for source ${src}`)
+        }
+        return {
+          bitrate,
+          width,
+          height,
+          src,
+          mime,
+        }
+      })
+      .sort((a, b) => a.bitrate - b.bitrate)
     this._currentLevelIndex = 0
     this._nextLevelIndex = 0
     this._startLevelIndex = 0
@@ -121,12 +123,9 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
     }
   }
 
-  protected setInitialBitrate(bitrate: number) {
-    this._startLevelIndex = this.levels.findIndex(level => level.bitrate === bitrate)
-  }
-
   protected onInit(video: HTMLVideoElement, source: SourceWithMimeType): void {
     source = this.levels[this._startLevelIndex] || source
+    this._nextLevelIndex = this._startLevelIndex
     // initialize
     if (video.canPlayType(source.mime)) {
       const disposables = new DisposableStore()
@@ -143,6 +142,9 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
         disposables
       )
 
+      // must init the current level
+      this._currentLevelIndex = this._nextLevelIndex
+      this.updateQualityLevel()
       this.updatePlayList()
       this.setReady()
       this._register(disposables)
@@ -157,12 +159,25 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
     }
   }
 
+  public setInitialBitrate(bitrate: number) {
+    let index = 0
+    const levels = this.levels.slice().sort((a, b) => a.bitrate - b.bitrate)
+    for (let i = 0; i < levels.length; i++) {
+      if (levels[i].bitrate < bitrate) {
+        index = i
+      } else {
+        break
+      }
+    }
+    this._startLevelIndex = index
+  }
+
   public get bandwidthEstimate(): number {
     return NaN
   }
 
   public get name(): string {
-    return 'XPCBasePlayer (1.0)'
+    return 'XPCBasePlayer (1.1)'
   }
 
   public get supportAutoQuality(): boolean {

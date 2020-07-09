@@ -184,23 +184,6 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
     }
   }
 
-  protected setInitialBitrate(bitrate: number) {
-    const dashPlayer = this._dashPlayer
-    dashPlayer.updateSettings({
-      streaming: {
-        fastSwitchEnabled: this._fastSwitchEnabled,
-        abr: {
-          autoSwitchBitrate: {
-            [this._mediaType]: false,
-          },
-          initialBitrate: {
-            [this._mediaType]: bitrate,
-          },
-        },
-      },
-    })
-  }
-
   protected onInit(video: HTMLVideoElement, source: SourceWithMimeType): void {
     const dashPlayer = this._dashPlayer
     dashPlayer.initialize(video, source.src, this.video.autoplay)
@@ -240,6 +223,20 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
     )
 
     this._register(disposables)
+  }
+
+  public setInitialBitrate(bitrate: number) {
+    const dashPlayer = this._dashPlayer
+    dashPlayer.updateSettings({
+      streaming: {
+        fastSwitchEnabled: this._fastSwitchEnabled,
+        abr: {
+          initialBitrate: {
+            [this._mediaType]: bitrate / 1000,
+          },
+        },
+      },
+    })
   }
 
   public get bandwidthEstimate(): number {

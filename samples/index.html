@@ -194,6 +194,7 @@
         },
         ...mp4s,
       ],
+      initialBitrate: 3000000,
       autoplay: true,
       controls: true,
       abrFastSwitch: true,
@@ -360,7 +361,6 @@
       } else if (playbackRate > 1) {
         i = 3
       }
-      console.log(i, playbackRate)
       $(`.player-rate span:nth-child(${i})`).classList.add('selected')
     }
 
@@ -406,7 +406,7 @@
     updatePlayback()
 
     $('button.player-switch-source').onclick = () => {
-      player.setSource(mp4s)
+      player.setSource(mp4s, 3000000)
       updatePlayback()
     }
 

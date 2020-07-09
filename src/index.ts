@@ -30,6 +30,7 @@ export interface NSPlayerOptions {
   el?: HTMLElement
   selector?: string
   source?: Source | Source[]
+  initialBitrate?: number
   autoplay?: boolean
   playbackRate?: number
   preload?: 'auto' | 'none' | 'metadata'
@@ -57,7 +58,7 @@ export interface IPlayer extends BasePlayer {
   sourcePolicy: SourcePolicy
 
   /** 提供所有可供播放的资源，请尽量提供 mime type 以及 src */
-  setSource(sources: Source | Source[]): boolean
+  setSource(sources: Source | Source[], initialBitrate?: number): boolean
 
   /** 根据 id 请求播放质量，auto 表示自动，id 在各类核心播放器之间通用 */
   requestQualityById(id: string): void
@@ -241,7 +242,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       }
 
       if (opt.source) {
-        this.setSource(opt.source)
+        this.setSource(opt.source, opt.initialBitrate)
       }
     }
   }
@@ -424,9 +425,9 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     }
   }
 
-  public setSource(sources: Source | Source[]): boolean {
+  public setSource(sources: Source | Source[], initialBitrate?: number): boolean {
     if (!Array.isArray(sources)) {
-      return this.setSource([sources])
+      return this.setSource([sources], initialBitrate)
     }
 
     this.reset()
@@ -446,6 +447,10 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
               // another core player created
               corePlayer.dispose()
               return
+            }
+
+            if (initialBitrate) {
+              corePlayer.setInitialBitrate(initialBitrate)
             }
 
             if (!isAutoQuality(this._requestedQualityId)) {

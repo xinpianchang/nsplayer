@@ -69,6 +69,9 @@ export interface ICorePlayer extends IDisposable {
   /** 根据质量ID设定播放质量，ID 为 auto 表示自动切换 */
   setQualityById(id: string): void
 
+  /** 初始的播放比特率 */
+  setInitialBitrate(bitrate: number): void
+
   /** 如何 retry */
   // retry(): void
 }
@@ -151,6 +154,7 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
   public abstract get name(): string
   public abstract get supportAutoQuality(): boolean
   public abstract get bandwidthEstimate(): number
+  public abstract setInitialBitrate(bitrate: number): void
 
   protected abstract get levels(): Level[]
   protected abstract get currentLevel(): Level | undefined
@@ -160,7 +164,6 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
   protected abstract findLevelIndexById(id: string): number
   protected abstract setAutoQualityState(auto: boolean): void
   protected abstract setNextLevelIndex(index: number): void
-  protected abstract setInitialBitrate(bitrate: number): void
 
   /** 实现 video 和播放 src 对应的初始化关系，该 src 通常为一个 mp4 或 m3u8 或 mpd */
   protected abstract onInit(video: HTMLVideoElement, source: SourceWithMimeType): void
