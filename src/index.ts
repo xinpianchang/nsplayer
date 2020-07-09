@@ -31,6 +31,7 @@ export interface NSPlayerOptions {
   selector?: string
   source?: Source | Source[]
   autoplay?: boolean
+  playbackRate?: number
   preload?: 'auto' | 'none' | 'metadata'
   loop?: boolean
   muted?: boolean
@@ -233,6 +234,10 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
 
       if (opt.abrFastSwitch === false) {
         this._abrFastSwitch = false
+      }
+
+      if (opt.playbackRate) {
+        this.video.defaultPlaybackRate = opt.playbackRate
       }
 
       if (opt.source) {
@@ -466,6 +471,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
 
   public reset() {
     const autoplay = this.autoplay
+    this.playbackRate = this.opt.playbackRate || 1
     this._corePlayerRef.value = undefined
     // FIXME auto play status will be false after dispose core player
     this.autoplay = autoplay

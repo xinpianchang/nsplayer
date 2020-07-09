@@ -103,6 +103,23 @@
     div.player-stat span {
       display: block;
     }
+    div.player-rate {
+      display: flex;
+    }
+    div.player-rate span {
+      border: 1px solid #333;
+      padding: 2px 4px;
+      margin: 2px 4px 2px 0;
+      cursor: pointer;
+      transition: all .3s ease;
+    }
+    div.player-rate span:hover {
+      background: rgba(244, 244, 244, 0.2);
+    }
+    div.player-rate span.selected {
+      border: 1px solid white;
+      background: rgba(244, 244, 244, 0.4);
+    }
   </style>
 </head>
 <body>
@@ -120,6 +137,11 @@
     <button class="player-play">Play</button>
     <button class="player-fullscreen">Fullscreen</button>
     <div class="player-volume"></div>
+    <div class="player-rate">
+      <span class="slow">0.7X</span>
+      <span class="normal">1.0X</span>
+      <span class="fast">1.5X</span>
+    </div>
     <button class="player-auto-play-error">恢复声音</button>
     <div class="player-stat">
       <span class="viewport-frames"></span>
@@ -329,6 +351,19 @@
       $('.player-volume').innerText = player.muted ? 'Muted' : `Vol ${Math.round(player.volume * 100)} / 100`
     }
 
+    function updatePlayback() {
+      $('.player-rate span.selected')?.classList.remove('selected')
+      const playbackRate = player.playbackRate
+      let i = 2
+      if (playbackRate < 1) {
+        i = 1
+      } else if (playbackRate > 1) {
+        i = 3
+      }
+      console.log(i, playbackRate)
+      $(`.player-rate span:nth-child(${i})`).classList.add('selected')
+    }
+
     function updateViewPortFrames() {
       const { width, height } = player.viewport
       const {
@@ -368,9 +403,18 @@
 
     updatePlayBtn()
     updateVolume()
+    updatePlayback()
 
     $('button.player-switch-source').onclick = () => {
       player.setSource(mp4s)
+      updatePlayback()
+    }
+
+    $('.player-rate').onclick = e => {
+      if (e.target.tagName === 'SPAN') {
+        const playbackRate = Number(e.target.innerText.slice(0, -1))
+        player.playbackRate = playbackRate
+      }
     }
 
     player.onPlay(showEvent)
@@ -399,6 +443,7 @@
     player.onPlay(updatePlayBtn)
     player.onPause(updatePlayBtn)
     player.onVolumeChange(updateVolume)
+    player.onRateChange(updatePlayback)
 
     setInterval(updatePlayerStat, 500)
 

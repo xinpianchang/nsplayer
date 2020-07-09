@@ -91,9 +91,12 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
     const source = this.nextLevel
     if (source) {
       const video = this._video
+
       const currentTime = video.currentTime
-      const paused = video.paused
       const autoplay = video.autoplay
+      const playbackRate = video.playbackRate
+      const paused = video.paused
+
       video.pause()
       video.autoplay = true
       video.src = source.src
@@ -102,6 +105,7 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
         this._changeQualityDisposable.value = undefined
         video.currentTime = currentTime
         video.autoplay = autoplay
+        video.playbackRate = playbackRate
         if (paused) {
           video.pause()
         } else {

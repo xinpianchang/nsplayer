@@ -55,6 +55,7 @@ export interface BasePlayer extends BasePlayerWithEvent {
   readonly networkState: number
   readonly paused: boolean
   playbackRate: number
+  defaultPlaybackRate: number
   readonly played: TimeRanges
   preload: string
   readonly readyState: number
@@ -346,6 +347,7 @@ delegates(BasePlayer.prototype, 'video')
   .getter('networkState')
   .getter('paused')
   .access('playbackRate')
+  .access('defaultPlaybackRate')
   .getter('played')
   .access('preload')
   .getter('readyState')
