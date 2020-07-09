@@ -317,7 +317,7 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
 
     const idx = i - 1
 
-    if (idx >= this.buffered.length) {
+    if (idx >= this.buffered.length || idx < 0) {
       return c
     }
 
