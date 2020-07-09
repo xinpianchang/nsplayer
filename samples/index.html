@@ -128,6 +128,7 @@
       <span class="bufferhealth"></span>
       <span class="codec"></span>
     </div>
+    <button class="player-switch-source">更换 Source</button>
   </div>
   <!-- <script src="../dist/index.umd.js"></script> -->
   <script type="module">
@@ -367,6 +368,10 @@
 
     updatePlayBtn()
     updateVolume()
+
+    $('button.player-switch-source').onclick = () => {
+      player.setSource(mp4s)
+    }
 
     player.onPlay(showEvent)
     player.onPause(showEvent)

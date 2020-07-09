@@ -96,6 +96,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   private _sourcePolicy = DefaultSourcePolicy
   private _abrFastSwitch = true
   private _containerTimer = 0
+  private _corePlayerCreateCounter = 0
 
   protected readonly _onFullscreenChange = this._register(new Emitter<void>())
   public readonly onFullscreenChange = this._onFullscreenChange.event
@@ -189,6 +190,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     this._register(this._disposableParentElement)
     this._register(this._delayQualitySwitchRequest)
     this._register(this._corePlayerRef)
+    this._register(toDisposable(() => this._corePlayerCreateCounter++))
     this.onPause(this._onQualitySwitchStart.pause, this._onQualitySwitchStart)
     this.onPlay(this._onQualitySwitchStart.resume, this._onQualitySwitchStart)
     this.onPause(this._onQualitySwitchEnd.pause, this._onQualitySwitchEnd)
@@ -422,6 +424,8 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       return this.setSource([sources])
     }
 
+    this.reset()
+    const counterId = ++this._corePlayerCreateCounter
     this._sources = sources
 
     // policy to choose coreplayer
@@ -433,6 +437,12 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
         const video = this.withVideo()
         createCorePlayer(source, video, sources, this._abrFastSwitch)
           .then(corePlayer => {
+            if (counterId !== this._corePlayerCreateCounter) {
+              // another core player created
+              corePlayer.dispose()
+              return
+            }
+
             if (!isAutoQuality(this._requestedQualityId)) {
               corePlayer.setQualityById(this._requestedQualityId)
             } else if (!corePlayer.supportAutoQuality) {
@@ -445,15 +455,21 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
             this._onQualityChange.input = corePlayer.onQualityChange
             this._onAutoChange.input = corePlayer.onAutoChange
             this._corePlayerRef.value = corePlayer
-
-            return corePlayer
           })
           .catch(err => console.warn(err))
         return true
       }
     }
 
-    this.reset()
     return false
+  }
+
+  public reset() {
+    const autoplay = this.autoplay
+    this._corePlayerRef.value = undefined
+    // FIXME auto play status will be false after dispose core player
+    this.autoplay = autoplay
+    this._requestedQualityId = 'auto'
+    super.reset()
   }
 }

@@ -13,7 +13,7 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
   private _currentLevelIndex: number
   private _nextLevelIndex: number
   private _startLevelIndex: number
-  private _changeQualityDisposable = new MutableDisposable()
+  private _changeQualityDisposable = this._register(new MutableDisposable())
   private _sources: SourceWithDetail[]
 
   constructor(private _video: HTMLVideoElement, sources: Source[]) {
@@ -33,8 +33,7 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
     this._currentLevelIndex = 0
     this._nextLevelIndex = 0
     this._startLevelIndex = 0
-    this._register(this._changeQualityDisposable)
-    this._register(toDisposable(() => _video.load()))
+    this._register(toDisposable(() => _video.pause()))
   }
 
   protected get levels() {
@@ -144,7 +143,7 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
       this.setReady()
       this._register(disposables)
 
-      // TODO currentTime restore
+      // FIXME currentTime restore
       video.src = source.src
       if (video.autoplay) {
         video.play()
