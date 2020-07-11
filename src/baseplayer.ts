@@ -152,6 +152,9 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
   private readonly _onAutoPlayError = this._register(new Emitter<globalThis.Event>())
   public readonly onAutoPlayError = Event.once(this._onAutoPlayError.event)
 
+  // pause state for workaround
+  private _paused = false
+
   constructor() {
     super()
 
@@ -292,6 +295,10 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
       this.video.pause()
       this.video?.removeAttribute('src')
       this.load()
+      if (!this._paused) {
+        // workaround to dispatch a pause event for completing the lifecycle
+        this.video.dispatchEvent(new window.Event('pause', { cancelable: true }))
+      }
     }
   }
 
