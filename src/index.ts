@@ -475,12 +475,19 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   }
 
   public reset() {
-    const autoplay = this.autoplay
-    this.playbackRate = this.opt.playbackRate || 1
-    this._corePlayerRef.value = undefined
-    // FIXME auto play status will be false after dispose core player
-    this.autoplay = autoplay
-    this._requestedQualityId = 'auto'
-    super.reset()
+    if (this.video) {
+      const autoplay = this.autoplay
+      this.playbackRate = this.opt.playbackRate || 1
+      const paused = this.paused
+      this._corePlayerRef.value = undefined
+      // FIXME auto play status will be false after dispose core player
+      this.autoplay = autoplay
+      this._requestedQualityId = 'auto'
+      super.reset()
+      if (!paused) {
+        // workaround to dispatch a pause event for completing the lifecycle
+        this.video.dispatchEvent(new window.Event('pause', { cancelable: true }))
+      }
+    }
   }
 }
