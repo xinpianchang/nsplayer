@@ -1,15 +1,25 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import commonjs from '@rollup/plugin-commonjs'
 import json from '@rollup/plugin-json'
 import resolve from '@rollup/plugin-node-resolve'
 import babel from '@rollup/plugin-babel'
-// import nodePolyfills from 'rollup-plugin-node-polyfills'
 import builtins from 'rollup-plugin-node-builtins'
+import { terser } from 'rollup-plugin-terser'
+import pkg from './package.json'
+
+// import nodePolyfills from 'rollup-plugin-node-polyfills'
 // import replace from '@rollup/plugin-replace'
 // import external from 'builtin-modules'
-import { terser } from 'rollup-plugin-terser'
-// import pkg from './package.json'
 
 const extensions = ['.js', '.ts']
+
+const makeExternalPredicate = externalArr => {
+  if (externalArr.length === 0) {
+    return () => false
+  }
+  const pattern = new RegExp(`^(${externalArr.join('|')})($|/)`)
+  return id => pattern.test(id)
+}
 
 const onwarn = (warning, warn) => {
   if (warning.code === 'CIRCULAR_DEPENDENCY' && warning.importer.match(/readable-stream/)) {
@@ -19,72 +29,99 @@ const onwarn = (warning, warn) => {
   warn(warning)
 }
 
-export default [
-  {
-    onwarn,
-    input: 'src/index.ts',
-    output: [
-      {
-        dir: 'dist/cjs',
-        format: 'cjs',
-        intro: 'var global = typeof self !== undefined ? self : this;',
-      },
-      {
-        dir: 'dist/esm',
-        format: 'esm',
-        intro: 'var global = typeof self !== undefined ? self : this;',
-        // sourcemap: true,
-      },
-    ],
-    // external,
-    plugins: [
-      json(),
-      builtins(),
-      resolve({
-        extensions,
-        mainFields: ['jsnext:main', 'module', 'main'],
-        browser: true,
-        preferBuiltins: false,
-      }),
-      // replace({
-      //   delimiters: ['', ''],
-      //   values: {
-      //     'require(\'readable-stream/transform\')': 'require(\'stream\').Transform',
-      //     'require("readable-stream/transform")': 'require("stream").Transform',
-      //     'readable-stream': 'stream'
-      //   }
-      // }),
-      commonjs({
-        sourceMap: false,
-      }),
-      babel({
-        extensions,
-        include: ['src/**/*'],
-        babelHelpers: 'bundled',
-      }),
-      terser(),
-    ],
+// CommonJS
+const cjs = {
+  onwarn,
+  input: 'src/index.ts',
+  output: {
+    dir: 'dist/cjs',
+    format: 'cjs',
+    indent: false,
+    intro: 'var global = typeof self !== undefined ? self : this;',
   },
-  // {
-  //   input: 'src/index.ts',
-  //   output: [
-  //     {
-  //       name: 'NSPlayer',
-  //       file: pkg.browser,
-  //       format: 'umd',
-  //     },
-  //   ],
-  //   plugins: [
-  //     json(),
-  //     builtins(),
-  //     resolve({ extensions, browser: true }),
-  //     commonjs(),
-  //     babel({
-  //       extensions,
-  //       include: ['src/**/*'],
-  //       babelHelpers: 'bundled',
-  //     }),
-  //     terser(),
-  //   ],
-  // },
+  external: makeExternalPredicate([
+    ...Object.keys(pkg.dependencies || {}),
+    ...Object.keys(pkg.peerDependencies || {}),
+  ]),
+  plugins: [
+    json(),
+    builtins(),
+    resolve({
+      extensions,
+      preferBuiltins: false,
+    }),
+    commonjs({ sourceMap: false }),
+    babel({
+      extensions,
+      include: ['src/**/*'],
+      babelHelpers: 'runtime',
+    }),
+  ],
+}
+
+// ES Module
+const ejs = {
+  onwarn,
+  input: 'src/index.ts',
+  output: {
+    dir: 'dist/esm',
+    format: 'esm',
+    indent: false,
+    intro: 'var global = typeof self !== undefined ? self : this;',
+  },
+  external: makeExternalPredicate([
+    ...Object.keys(pkg.dependencies || {}),
+    ...Object.keys(pkg.peerDependencies || {}),
+  ]),
+  plugins: [
+    json(),
+    builtins(),
+    resolve({
+      extensions,
+      preferBuiltins: false,
+    }),
+    commonjs({ sourceMap: false }),
+    babel({
+      extensions,
+      include: ['src/**/*'],
+      babelHelpers: 'runtime',
+    }),
+  ],
+}
+
+// ES for browsers
+const mjs = {
+  onwarn,
+  input: 'src/index.ts',
+  output: {
+    dir: 'dist/mjs',
+    format: 'esm',
+    indent: false,
+    entryFileNames: '[name].mjs',
+    chunkFileNames: '[name]-[hash].mjs',
+    intro: 'var global = typeof self !== undefined ? self : this;',
+  },
+  plugins: [
+    json(),
+    builtins(),
+    resolve({
+      extensions,
+      preferBuiltins: false,
+    }),
+    commonjs({ sourceMap: false }),
+    babel({
+      extensions,
+      exclude: 'node_modules/**',
+      include: ['src/**/*'],
+      babelHelpers: 'runtime',
+    }),
+    terser(),
+  ],
+}
+
+// eslint-disable-next-line prettier/prettier
+export default [
+  cjs,
+  ejs,
+  mjs,
 ]

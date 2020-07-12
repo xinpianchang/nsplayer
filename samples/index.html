@@ -154,7 +154,7 @@
   </div>
   <!-- <script src="../dist/index.umd.js"></script> -->
   <script type="module">
-    import NSPlayer from '../dist/esm/index.js'
+    import NSPlayer from '../dist/mjs/index.mjs'
     const { qualityLevelToId, idToQualityLevel } = NSPlayer
     // https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd
     // https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8
@@ -444,32 +444,7 @@
     player.onPause(updatePlayBtn)
     player.onVolumeChange(updateVolume)
     player.onRateChange(updatePlayback)
-
     setInterval(updatePlayerStat, 500)
-
-    // evt.data: {
-    //   supportAuto: true,
-    //   size: 1,
-    //   list: [
-    //     type: 'progressive',
-    //     src: 'https://dsfafsdafsdafsdaf'
-    //   ]
-    // }
-
-    // player.setSource([
-    //   { type: 'progressive', mime: 'video/mp4', src: 'https://dddd.ma4', quality: 'Q720', fps: '29.976' },
-    //   { type: 'hls', mime: '', src: 'https://dddd.m3u8' }
-    // ])
-
-    // player.selectPlayListItem(id: string)
-
-    // player.setDefaultPolicy(policy: (playlist) => id)
-
-    // player.setAutoSelectPolicy(policy: (networkState, dxxxxx) => id)
-
-
-
-
   </script>
 </body>
 </html>
