@@ -66,8 +66,8 @@ export interface IPlayer extends BasePlayer {
   /** 根据 PlayList 数组的下标请求播放质量，-1 则表示自动 */
   requestQualityByIndex(index: number): void
 
-  readonly onFullscreenChange: Event<void>
-  readonly onFullscreenError: Event<void>
+  readonly onFullscreenChange: Event<globalThis.Event>
+  readonly onFullscreenError: Event<globalThis.Event>
   readonly onVideoAttach: Event<HTMLVideoElement>
   readonly onVideoDetach: Event<HTMLVideoElement>
   readonly onQualitySwitchStart: Event<QualityLevel>
@@ -100,10 +100,10 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   private _containerTimer = 0
   private _corePlayerCreateCounter = 0
 
-  protected readonly _onFullscreenChange = this._register(new Emitter<void>())
+  protected readonly _onFullscreenChange = this._register(new Emitter<globalThis.Event>())
   public readonly onFullscreenChange = this._onFullscreenChange.event
 
-  protected readonly _onFullscreenError = this._register(new Emitter<void>())
+  protected readonly _onFullscreenError = this._register(new Emitter<globalThis.Event>())
   public readonly onFullscreenError = this._onFullscreenError.event
 
   protected readonly _onVideoAttach = this._register(new Emitter<HTMLVideoElement>())
@@ -268,7 +268,9 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       return this._el.requestFullscreen(options)
     }
     const error = new Error('container not initialized')
-    this._onFullscreenError.fire()
+    const evt = new window.Event('fullscreenerror')
+    Object.defineProperty(evt, 'error', { value: error })
+    this._onFullscreenError.fire(evt)
     return Promise.reject(error)
   }
 
@@ -327,11 +329,11 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   private _registerContainerListeners(el: HTMLElement | null) {
     const video = this.withVideo()
     if (el) {
-      const fullscreenChangeHandler = () => this._onFullscreenChange.fire()
-      const fullscreenErrorHandler = () => this._onFullscreenError.fire()
+      const fullscreenChangeHandler = (e: globalThis.Event) => this._onFullscreenChange.fire(e)
+      const fullscreenErrorHandler = (e: globalThis.Event) => this._onFullscreenError.fire(e)
       const detachVideoHandler = () => this._onVideoDetach.fire(video)
-      const onFullscreenChange = Event.fromDOMEventEmitter(el, 'fullscreenchange')
-      const onFullscreenError = Event.fromDOMEventEmitter(el, 'fullscreenerror')
+      const onFullscreenChange = Event.fromDOMEventEmitter<globalThis.Event>(el, 'fullscreenchange')
+      const onFullscreenError = Event.fromDOMEventEmitter<globalThis.Event>(el, 'fullscreenerror')
       const disposables: IDisposable[] = []
 
       onFullscreenChange(fullscreenChangeHandler, null, disposables)

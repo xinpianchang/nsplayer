@@ -147,7 +147,7 @@ function fixPauseEvent(this: BasePlayer, video: HTMLVideoElement, disposables?: 
 
 export abstract class BasePlayer extends Disposable implements IBasePlayer {
   private _video: HTMLVideoElement | null = null
-  private _disposableVideo = new MutableDisposable()
+  private _disposableVideo = this._register(new MutableDisposable())
 
   private readonly _onAutoPlayError = this._register(new Emitter<globalThis.Event>())
   public readonly onAutoPlayError = Event.once(this._onAutoPlayError.event)
@@ -155,24 +155,7 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
   // pause state for workaround
   private _paused = false
 
-  constructor() {
-    super()
-
-    // register video disposable
-    this._register(this._disposableVideo)
-
-    // register player listener disposable
-    const player = this as any
-    VideoEventNameArray.map(key => {
-      const emitter = new Emitter<unknown>()
-      this._register(emitter)
-      player[`_${key}`] = emitter
-      player[key] = emitter.event
-    })
-  }
-
   public abstract get fullscreen(): boolean
-
   public abstract requestFullscreen(options?: FullscreenOptions | undefined): Promise<void>
 
   public exitFullscreen(): Promise<void> {
@@ -368,3 +351,33 @@ delegates(BasePlayer.prototype, 'video')
   .method('play')
   .method('setMediaKeys')
   .method('requestFullscreen')
+
+const _noop = () => undefined
+
+const _internalEmitter = {
+  fire: _noop,
+  event: () => Disposable.None,
+  dispose: _noop,
+}
+
+// register player listener disposable
+const desc = VideoEventNameArray.reduce((desc: any, key) => {
+  const emitterKey = `_${key}`
+  desc[emitterKey] = {
+    value: _internalEmitter,
+  }
+  desc[key] = {
+    get() {
+      let emitter = this[emitterKey]
+      if (emitter === _internalEmitter) {
+        emitter = this._register(new Emitter())
+        Object.defineProperty(this, emitterKey, { get: () => emitter })
+      }
+      return emitter.event
+    },
+    enumerable: true,
+  }
+  return desc
+}, {} as Record<string, PropertyDescriptor>)
+
+Object.defineProperties(BasePlayer.prototype, desc)

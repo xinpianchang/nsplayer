@@ -153,6 +153,11 @@
     <button class="player-switch-source">更换 Source</button>
   </div>
   <!-- <script src="../dist/index.umd.js"></script> -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vConsole/3.3.4/vconsole.min.js"></script>
+  <script>
+      var vConsole = new VConsole();
+      console.log('vconsole setup done');
+  </script>
   <script type="module">
     import NSPlayer from '../dist/mjs/index.mjs'
     const { qualityLevelToId, idToQualityLevel } = NSPlayer
@@ -432,6 +437,7 @@
     player.onSeeked(showEvent)
     player.onCanPlay(showEvent)
     player.onCanPlayThrough(showEvent)
+    player.onFullscreenChange(showEvent)
 
     player.onDurationChange(updateTime)
     player.onTimeUpdate(updateTime)
