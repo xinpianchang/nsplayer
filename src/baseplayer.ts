@@ -149,7 +149,7 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
   private _video: HTMLVideoElement | null = null
   private _disposableVideo = this._register(new MutableDisposable())
 
-  private readonly _onAutoPlayError = this._register(new Emitter<globalThis.Event>())
+  protected readonly _onAutoPlayError = this._register(new Emitter<globalThis.Event>())
   public readonly onAutoPlayError = Event.once(this._onAutoPlayError.event)
 
   // pause state for workaround
@@ -173,6 +173,10 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
     }
   }
 
+  public get supportFullscreen() {
+    return !!document.fullscreenEnabled
+  }
+
   public get pictureInPicture(): boolean {
     return !!this.video && this.video === document.pictureInPictureElement
   }
@@ -193,7 +197,7 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
   }
 
   public get supportPictureInPicture() {
-    return !!HTMLVideoElement.prototype.requestPictureInPicture
+    return !!document.pictureInPictureEnabled
   }
 
   public togglePictureInPicture() {

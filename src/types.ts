@@ -10,15 +10,29 @@ declare global {
   interface HTMLMediaElementEventMap {
     enterpictureinpicture: globalThis.Event
     leavepictureinpicture: globalThis.Event
+    webkitplaybacktargetavailabilitychanged: WebKitPlaybackTargetAvailabilityEvent
+  }
+
+  /** airplay */
+  interface WebKitPlaybackTargetAvailabilityEvent extends globalThis.Event {
+    availability: 'available' | 'not-available'
+  }
+
+  /** airplay */
+  interface Window {
+    WebKitPlaybackTargetAvailabilityEvent?: WebKitPlaybackTargetAvailabilityEvent
   }
 
   interface Document {
+    pictureInPictureEnabled: boolean
     pictureInPictureElement: HTMLVideoElement | null
     exitPictureInPicture(): Promise<void>
   }
 
   interface HTMLVideoElement {
     requestPictureInPicture?: () => Promise<void>
+    // airplay
+    webkitShowPlaybackTargetPicker?: () => void
   }
 }
 
@@ -49,6 +63,7 @@ export const VideoEventNameMap = {
   onWaiting: 'waiting',
   onEnterPictureInPicture: 'enterpictureinpicture',
   onLeavePictureInPicture: 'leavepictureinpicture',
+  onWebkitPlaybackTargetAvailabilityChanged: 'webkitplaybacktargetavailabilitychanged',
 } as const
 
 export type VideoEventNameMap = typeof VideoEventNameMap

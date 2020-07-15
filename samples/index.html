@@ -136,6 +136,7 @@
     <progress class="player-waiting"></progress>
     <button class="player-play">Play</button>
     <button class="player-fullscreen">Fullscreen</button>
+    <button class="player-airplay" style="display: none;">AirPlay</button>
     <div class="player-volume"></div>
     <div class="player-rate">
       <span class="slow">0.7X</span>
@@ -369,6 +370,14 @@
       $(`.player-rate span:nth-child(${i})`).classList.add('selected')
     }
 
+    function updateAirplay(e) {
+      if (e.availability === 'available') {
+        $('.player-airplay').style.display = 'block'
+      } else {
+        $('.player-airplay').style.display = 'none'
+      }
+    }
+
     function updateViewPortFrames() {
       const { width, height } = player.viewport
       const {
@@ -422,6 +431,12 @@
       }
     }
 
+    $('.player-airplay').onclick = () => {
+      if (player.video.webkitShowPlaybackTargetPicker) {
+        player.video.webkitShowPlaybackTargetPicker()
+      }
+    }
+
     player.onPlay(showEvent)
     player.onPause(showEvent)
     player.onPlaying(showEvent)
@@ -450,6 +465,8 @@
     player.onPause(updatePlayBtn)
     player.onVolumeChange(updateVolume)
     player.onRateChange(updatePlayback)
+    player.onWebkitPlaybackTargetAvailabilityChanged(updateAirplay)
+
     setInterval(updatePlayerStat, 500)
   </script>
 </body>
