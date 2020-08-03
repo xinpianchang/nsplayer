@@ -30,6 +30,7 @@ export interface IBasePlayer extends IDisposable {
   readonly fullscreen: boolean
 
   readonly onAutoPlayError: Event<globalThis.Event>
+  readonly onLoopChange: Event<globalThis.Event>
 }
 
 /**
@@ -49,7 +50,6 @@ export interface BasePlayer extends BasePlayerWithEvent {
   readonly duration: number
   readonly ended: boolean
   readonly error: MediaError | null
-  loop: boolean
   mediaKeys: MediaKeys | null
   muted: boolean
   readonly networkState: number
@@ -152,11 +152,37 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
   protected readonly _onAutoPlayError = this._register(new Emitter<globalThis.Event>())
   public readonly onAutoPlayError = Event.once(this._onAutoPlayError.event)
 
+  protected readonly _onLoopChange = this._register(new Emitter<globalThis.Event>())
+  public readonly onLoopChange = this._onLoopChange.event
+
   // pause state for workaround
   private _paused = false
+  private _loop = false
 
   public abstract get fullscreen(): boolean
   public abstract requestFullscreen(options?: FullscreenOptions | undefined): Promise<void>
+
+  public set loop(loop: boolean) {
+    const video = this.video
+    if (video) {
+      this._loop = video.loop
+    }
+    if (this._loop !== loop) {
+      this._loop = loop
+      if (video) {
+        video.loop = loop
+      }
+      this._onLoopChange.fire(new window.Event('loopchange'))
+    }
+  }
+
+  public get loop() {
+    const video = this.video
+    if (video) {
+      this._loop = video.loop
+    }
+    return this._loop
+  }
 
   public exitFullscreen(): Promise<void> {
     if (this.fullscreen) {
@@ -166,10 +192,18 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
   }
 
   public toggleFullscreen() {
-    if (this.fullscreen) {
-      this.requestFullscreen()
+    if (this.supportFullscreen) {
+      if (this.fullscreen) {
+        this.exitFullscreen().catch((error: Error) => {
+          console.warn(error, 'Video failed to exit fullscreen mode.')
+        })
+      } else {
+        this.requestFullscreen().catch((error: Error) => {
+          console.warn(error, 'Video failed to enter fullscreen mode.')
+        })
+      }
     } else {
-      this.exitFullscreen()
+      console.warn('Fullscreen is not supported')
     }
   }
 
@@ -233,6 +267,11 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
   private _registerVideoListeners(video: HTMLVideoElement | null) {
     this._video = video
     if (video) {
+      // sync status with video
+      this._paused = video.paused
+      // sync status with base player
+      video.loop = this._loop
+
       const player = this as any
       const disposables: IDisposable[] = []
 
@@ -335,7 +374,7 @@ delegates(BasePlayer.prototype, 'video')
   .getter('duration')
   .getter('ended')
   .getter('error')
-  .access('loop')
+  // .access('loop')
   .access('mediaKeys')
   .access('muted')
   .getter('networkState')
@@ -354,7 +393,6 @@ delegates(BasePlayer.prototype, 'video')
   .method('pause')
   .method('play')
   .method('setMediaKeys')
-  .method('requestFullscreen')
 
 const _noop = () => undefined
 

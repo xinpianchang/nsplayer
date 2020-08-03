@@ -138,12 +138,16 @@
     <button class="player-fullscreen">Fullscreen</button>
     <button class="player-airplay" style="display: none;">AirPlay</button>
     <div class="player-volume"></div>
+    <button class="player-auto-play-error">恢复声音</button>
     <div class="player-rate">
       <span class="slow">0.7X</span>
       <span class="normal">1.0X</span>
       <span class="fast">1.5X</span>
     </div>
-    <button class="player-auto-play-error">恢复声音</button>
+    <div class="player-loop">
+      <label for="player-loop">循环</label>
+      <input id="player-loop" type="checkbox" value="循环" />
+    </div>
     <div class="player-stat">
       <span class="viewport-frames"></span>
       <span class="current-optimal-res"></span>
@@ -370,6 +374,13 @@
       $(`.player-rate span:nth-child(${i})`).classList.add('selected')
     }
 
+    function updateLoop() {
+      const input = $('.player-loop input')
+      if (input) {
+        input.checked = player.loop
+      }
+    }
+
     function updateAirplay(e) {
       if (e.availability === 'available') {
         $('.player-airplay').style.display = 'block'
@@ -418,6 +429,7 @@
     updatePlayBtn()
     updateVolume()
     updatePlayback()
+    updateLoop()
 
     $('button.player-switch-source').onclick = () => {
       player.setSource(mp4s, 3000000)
@@ -437,6 +449,10 @@
       }
     }
 
+    $('.player-loop input').onclick = () => {
+      player.loop = !player.loop
+    }
+
     player.onPlay(showEvent)
     player.onPause(showEvent)
     player.onPlaying(showEvent)
@@ -453,6 +469,8 @@
     player.onCanPlay(showEvent)
     player.onCanPlayThrough(showEvent)
     player.onFullscreenChange(showEvent)
+    player.onLoopChange(showEvent)
+    player.onRateChange(showEvent)
 
     player.onDurationChange(updateTime)
     player.onTimeUpdate(updateTime)
@@ -465,6 +483,7 @@
     player.onPause(updatePlayBtn)
     player.onVolumeChange(updateVolume)
     player.onRateChange(updatePlayback)
+    player.onLoopChange(updateLoop)
     player.onWebkitPlaybackTargetAvailabilityChanged(updateAirplay)
 
     setInterval(updatePlayerStat, 500)
