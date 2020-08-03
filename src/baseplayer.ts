@@ -102,7 +102,7 @@ function fixAutoPlayPolicy(this: BasePlayer, video: HTMLVideoElement, disposable
       return (
         this.autoplay &&
         !this.muted &&
-        (err.name == 'NotAllowedError' || (err.name == 'AbortError' && isSafari()))
+        (err?.name == 'NotAllowedError' || (err?.name == 'AbortError' && isSafari()))
       )
     }
   )
