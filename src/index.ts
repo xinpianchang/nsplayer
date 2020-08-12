@@ -265,7 +265,10 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
 
   public requestFullscreen(options?: FullscreenOptions | undefined) {
     if (this._el) {
-      return this._el.requestFullscreen(options)
+      if (this.fullscreen) {
+        return Promise.resolve()
+      }
+      return Promise.resolve(this._el.requestFullscreen(options))
     }
     const error = new Error('container not initialized')
     const evt = new window.Event('fullscreenerror')

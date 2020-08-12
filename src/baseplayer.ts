@@ -186,7 +186,7 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
 
   public exitFullscreen(): Promise<void> {
     if (this.fullscreen) {
-      return document.exitFullscreen()
+      return Promise.resolve(document.exitFullscreen())
     }
     return Promise.resolve()
   }
