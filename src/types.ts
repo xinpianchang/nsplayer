@@ -30,13 +30,13 @@ declare global {
   }
 
   interface HTMLVideoElement {
-    requestPictureInPicture?: () => Promise<void>
+    readonly requestPictureInPicture?: () => Promise<void>
     // airplay
-    webkitShowPlaybackTargetPicker?: () => void
-    webkitSupportsFullscreen?: boolean
-    webkitDisplayingFullscreen?: boolean
-    webkitEnterFullscreen?: () => void
-    webkitExitFullscreen?: () => void
+    readonly webkitShowPlaybackTargetPicker?: () => void
+    readonly webkitSupportsFullscreen?: boolean
+    readonly webkitDisplayingFullscreen?: boolean
+    readonly webkitEnterFullscreen?: () => void
+    readonly webkitExitFullscreen?: () => void
   }
 }
 
