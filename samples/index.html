@@ -255,7 +255,7 @@
 
       $(`#${player.requestedQualityId}`).classList.add('selected')
       $('.player-play').onclick = () => player.toggle()
-      $('.player-fullscreen').onclick = () => player.fullscreen ? player.exitFullscreen() : player.requestFullscreen()
+      $('.player-fullscreen').onclick = () => player.toggleFullscreen({ fallback: 'native' })
     }
 
     function requestQuality() {

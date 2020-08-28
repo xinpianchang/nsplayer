@@ -33,6 +33,10 @@ declare global {
     requestPictureInPicture?: () => Promise<void>
     // airplay
     webkitShowPlaybackTargetPicker?: () => void
+    webkitSupportsFullscreen?: boolean
+    webkitDisplayingFullscreen?: boolean
+    webkitEnterFullscreen?: () => void
+    webkitExitFullscreen?: () => void
   }
 }
 

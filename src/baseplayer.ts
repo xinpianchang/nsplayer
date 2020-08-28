@@ -13,6 +13,13 @@ export interface NSPlayerOptions {
   el?: HTMLElement
 }
 
+export interface FullscreenFallbackOptions {
+  /** @default never fallback to native fullscreen  */
+  fallback?: 'native' | 'never'
+}
+
+export interface RequestFullscreenOptions extends FullscreenFallbackOptions, FullscreenOptions {}
+
 export interface IBasePlayer extends IDisposable {
   video: HTMLVideoElement | null
 
@@ -24,10 +31,15 @@ export interface IBasePlayer extends IDisposable {
   readonly supportPictureInPicture: boolean
   readonly pictureInPicture: boolean
 
-  toggleFullscreen(): void
-  requestFullscreen(options?: FullscreenOptions | undefined): Promise<void>
-  exitFullscreen(): Promise<void>
+  toggleFullscreen(options?: FullscreenFallbackOptions): void
+  requestFullscreen(options?: RequestFullscreenOptions): Promise<void>
+  exitFullscreen(options?: FullscreenFallbackOptions): Promise<void>
   readonly fullscreen: boolean
+
+  toggleNativeFullscreen(): void
+  requestNativeFullscreen(): void
+  exitNativeFullscreen(): void
+  readonly nativeFullscreen: boolean
 
   readonly onAutoPlayError: Event<globalThis.Event>
   readonly onLoopChange: Event<globalThis.Event>
@@ -160,7 +172,7 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
   private _loop = false
 
   public abstract get fullscreen(): boolean
-  public abstract requestFullscreen(options?: FullscreenOptions | undefined): Promise<void>
+  public abstract requestFullscreen(options?: RequestFullscreenOptions | undefined): Promise<void>
 
   public set loop(loop: boolean) {
     const video = this.video
@@ -184,14 +196,20 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
     return this._loop
   }
 
-  public exitFullscreen(): Promise<void> {
-    if (this.fullscreen) {
-      return document.exitFullscreen()
+  public exitFullscreen({ fallback = 'never' } = {}): Promise<void> {
+    if (this.supportFullscreen) {
+      if (this.fullscreen) {
+        return document.exitFullscreen()
+      }
+    } else if (fallback === 'native') {
+      if (this.nativeFullscreen) {
+        this.exitNativeFullscreen()
+      }
     }
     return Promise.resolve()
   }
 
-  public toggleFullscreen() {
+  public toggleFullscreen({ fallback = 'never' } = {}) {
     if (this.supportFullscreen) {
       if (this.fullscreen) {
         this.exitFullscreen().catch((error: Error) => {
@@ -202,13 +220,51 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
           console.warn(error, 'Video failed to enter fullscreen mode.')
         })
       }
+    } else if (fallback === 'native') {
+      this.toggleNativeFullscreen()
     } else {
       console.warn('Fullscreen is not supported')
     }
   }
 
+  public exitNativeFullscreen() {
+    if (this.nativeFullscreen) {
+      if (this.video?.webkitExitFullscreen) {
+        this.video.webkitExitFullscreen()
+      }
+    }
+  }
+
+  public requestNativeFullscreen() {
+    if (!this.nativeFullscreen && this.supportNativeFullscreen) {
+      if (this.video?.webkitEnterFullscreen) {
+        this.video.webkitEnterFullscreen()
+      }
+    }
+  }
+
+  public toggleNativeFullscreen() {
+    if (this.supportNativeFullscreen) {
+      if (this.nativeFullscreen) {
+        this.exitNativeFullscreen()
+      } else {
+        this.requestNativeFullscreen()
+      }
+    } else {
+      console.warn('Native fullscreen is not supported')
+    }
+  }
+
   public get supportFullscreen() {
     return !!document.fullscreenEnabled
+  }
+
+  public get supportNativeFullscreen() {
+    return !!this.video?.webkitSupportsFullscreen
+  }
+
+  public get nativeFullscreen(): boolean {
+    return !!this.video?.webkitDisplayingFullscreen
   }
 
   public get pictureInPicture(): boolean {

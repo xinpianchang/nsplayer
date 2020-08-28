@@ -3,7 +3,7 @@
 // ...
 // import '@babel/runtime'
 
-import { BasePlayer } from './baseplayer'
+import { BasePlayer, RequestFullscreenOptions } from './baseplayer'
 import {
   MutableDisposable,
   toDisposable,
@@ -263,15 +263,20 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     return false
   }
 
-  public requestFullscreen(options?: FullscreenOptions | undefined) {
-    if (this._el) {
-      return this._el.requestFullscreen(options)
+  public requestFullscreen(options?: RequestFullscreenOptions | undefined) {
+    if (this.supportFullscreen) {
+      if (this._el) {
+        return this._el.requestFullscreen(options)
+      }
+      const error = new Error('container not initialized')
+      const evt = new window.Event('fullscreenerror')
+      Object.defineProperty(evt, 'error', { value: error })
+      this._onFullscreenError.fire(evt)
+      return Promise.reject(error)
+    } else if (options?.fallback === 'native') {
+      this.requestNativeFullscreen()
     }
-    const error = new Error('container not initialized')
-    const evt = new window.Event('fullscreenerror')
-    Object.defineProperty(evt, 'error', { value: error })
-    this._onFullscreenError.fire(evt)
-    return Promise.reject(error)
+    return Promise.resolve()
   }
 
   private initHTMLVideoElement() {
@@ -333,10 +338,15 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       const fullscreenErrorHandler = (e: globalThis.Event) => this._onFullscreenError.fire(e)
       const detachVideoHandler = () => this._onVideoDetach.fire(video)
       const onFullscreenChange = Event.fromDOMEventEmitter<globalThis.Event>(el, 'fullscreenchange')
+      const onNativeFullscreenChange = Event.fromDOMEventEmitter<globalThis.Event>(video, [
+        'webkitbeginfullscreen',
+        'webkitendfullscreen',
+      ])
       const onFullscreenError = Event.fromDOMEventEmitter<globalThis.Event>(el, 'fullscreenerror')
       const disposables: IDisposable[] = []
 
       onFullscreenChange(fullscreenChangeHandler, null, disposables)
+      onNativeFullscreenChange(fullscreenChangeHandler, null, disposables)
       onFullscreenError(fullscreenErrorHandler, null, disposables)
       this.doAttach(video)
       this._onVideoAttach.fire(video)
