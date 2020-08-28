@@ -265,6 +265,9 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
 
   public requestFullscreen(options?: RequestFullscreenOptions | undefined) {
     if (this.supportFullscreen) {
+      if (this.fullscreen) {
+        return Promise.resolve()
+      }
       if (this._el) {
         return this._el.requestFullscreen(options)
       }
@@ -274,7 +277,9 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       this._onFullscreenError.fire(evt)
       return Promise.reject(error)
     } else if (options?.fallback === 'native') {
-      this.requestNativeFullscreen()
+      if (!this.nativeFullscreen) {
+        this.requestNativeFullscreen()
+      }
     }
     return Promise.resolve()
   }
