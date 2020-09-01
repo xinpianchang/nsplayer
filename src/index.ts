@@ -10,8 +10,11 @@ import {
   IDisposable,
   dispose,
   DisposableStore,
-} from '@newstudios/common/lifecycle'
-import { Emitter, Event, Relay, PauseableEmitter } from '@newstudios/common/event'
+  Emitter,
+  Event,
+  Relay,
+  PauseableEmitter,
+} from '@newstudios/common'
 import { Source, getMimeType, formatTime, Size } from './types'
 import {
   ICorePlayer,

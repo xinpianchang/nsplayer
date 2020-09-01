@@ -1,5 +1,5 @@
 /* eslint-disable no-constant-condition */
-import { Event } from '@newstudios/common/event'
+import { Event } from '@newstudios/common'
 
 export type Size = {
   width: number

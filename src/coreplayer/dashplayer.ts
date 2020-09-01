@@ -1,4 +1,4 @@
-import { toDisposable, DisposableStore } from '@newstudios/common/lifecycle'
+import { toDisposable, DisposableStore, Event } from '@newstudios/common'
 import { CorePlayer, SourceWithMimeType, QualityLevel, idToQualityLevel } from '.'
 import {
   MediaPlayer,
@@ -9,7 +9,6 @@ import {
   QualityChangeRenderedEvent,
   MediaType,
 } from 'dashjs'
-import { Event } from '@newstudios/common/event'
 
 type Trace = {
   b: [number]
