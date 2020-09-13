@@ -3,15 +3,16 @@ import {
   Disposable,
   toDisposable,
   MutableDisposable,
-} from '@newstudios/common/lifecycle'
-import { Event, Emitter } from '@newstudios/common/event'
+  Event,
+  Emitter,
+} from '@newstudios/common'
 import { MimeType, Source } from '../types'
 
 export interface QualityLevel {
   readonly bitrate: number
   readonly width: number
   readonly height: number
-  readonly type?: 'video' | 'audio'
+  readonly type?: 'video' | 'audio' | 'image'
 }
 
 export type PlayList = readonly QualityLevel[]

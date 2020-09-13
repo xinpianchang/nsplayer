@@ -1,8 +1,12 @@
 import Hls from 'hls.js'
-import { toDisposable, MutableDisposable, DisposableStore } from '@newstudios/common/lifecycle'
+import {
+  toDisposable,
+  MutableDisposable,
+  DisposableStore,
+  Event,
+  onUnexpectedError,
+} from '@newstudios/common'
 import { CorePlayer, SourceWithMimeType, idToQualityLevel, QualityLevel } from '.'
-import { Event } from '@newstudios/common/event'
-import { onUnexpectedError } from '@newstudios/common/errors'
 
 const supportMSE = Hls.isSupported()
 

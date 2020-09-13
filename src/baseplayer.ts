@@ -4,8 +4,9 @@ import {
   MutableDisposable,
   combinedDisposable,
   IDisposable,
-} from '@newstudios/common/lifecycle'
-import { Emitter, Event } from '@newstudios/common/event'
+  Event,
+  Emitter,
+} from '@newstudios/common'
 import { BasePlayerWithEvent, VideoEventNameMap, VideoEventNameArray, isSafari } from './types'
 import { assert } from './types'
 

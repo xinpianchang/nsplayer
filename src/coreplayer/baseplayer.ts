@@ -1,6 +1,5 @@
 import { CorePlayer, SourceWithMimeType, QualityLevel, idToQualityLevel } from '.'
-import { Event } from '@newstudios/common/event'
-import { toDisposable, DisposableStore, MutableDisposable } from '@newstudios/common/lifecycle'
+import { toDisposable, DisposableStore, MutableDisposable, Event } from '@newstudios/common'
 import { Source } from '../types'
 
 export interface SourceWithDetail extends SourceWithMimeType {
@@ -177,7 +176,7 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
   }
 
   public get name(): string {
-    return 'XPCBasePlayer (1.1)'
+    return 'XPCBasePlayer (1.2)'
   }
 
   public get supportAutoQuality(): boolean {
