@@ -176,7 +176,7 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
   }
 
   public get name(): string {
-    return 'XPCBasePlayer (1.1)'
+    return 'XPCBasePlayer (1.2)'
   }
 
   public get supportAutoQuality(): boolean {
