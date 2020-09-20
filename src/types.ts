@@ -30,6 +30,7 @@ declare global {
   }
 
   interface HTMLVideoElement {
+    playsInline: boolean
     readonly requestPictureInPicture?: () => Promise<void>
     // airplay
     readonly webkitShowPlaybackTargetPicker?: () => void

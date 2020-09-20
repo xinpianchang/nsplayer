@@ -272,7 +272,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
         return Promise.resolve()
       }
       if (this._el) {
-        return this._el.requestFullscreen(options)
+        return Promise.resolve(this._el.requestFullscreen(options))
       }
       const error = new Error('container not initialized')
       const evt = new window.Event('fullscreenerror')
@@ -346,16 +346,20 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       const fullscreenErrorHandler = (e: globalThis.Event) => this._onFullscreenError.fire(e)
       const detachVideoHandler = () => this._onVideoDetach.fire(video)
       const onFullscreenChange = Event.fromDOMEventEmitter<globalThis.Event>(el, 'fullscreenchange')
-      const onNativeFullscreenChange = Event.fromDOMEventEmitter<globalThis.Event>(video, [
-        'webkitbeginfullscreen',
-        'webkitendfullscreen',
-      ])
       const onFullscreenError = Event.fromDOMEventEmitter<globalThis.Event>(el, 'fullscreenerror')
       const disposables: IDisposable[] = []
 
       onFullscreenChange(fullscreenChangeHandler, null, disposables)
-      onNativeFullscreenChange(fullscreenChangeHandler, null, disposables)
       onFullscreenError(fullscreenErrorHandler, null, disposables)
+
+      if (!this.supportFullscreen) {
+        const onNativeFullscreenChange = Event.fromDOMEventEmitter<globalThis.Event>(video, [
+          'webkitbeginfullscreen',
+          'webkitendfullscreen',
+        ])
+        onNativeFullscreenChange(fullscreenChangeHandler, null, disposables)
+      }
+
       this.doAttach(video)
       this._onVideoAttach.fire(video)
 

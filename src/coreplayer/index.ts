@@ -324,7 +324,8 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
     } else if (playList.some((level, index) => !isSameLevel(this._playList[index], level))) {
       changed = true
     }
-    if (changed) {
+    // workaround: blank playlist should be notified
+    if (changed || playList.length === 0) {
       this._playList = playList
       this._onPlayListChange.fire(playList)
     }

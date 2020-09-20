@@ -56,12 +56,14 @@ function handleEvent(eventType, event) {
   document[spec[0]] = document[fsVendorKeywords[0]] || !!document[fsVendorKeywords[2]] || false
   document[spec[1]] = document[fsVendorKeywords[1]] || false
   document[spec[2]] = document[fsVendorKeywords[2]] || null
-  const evt = new Event(eventType, {
-    cancelable: false,
-    bubbles: true,
-  })
 
-  event.target.dispatchEvent(evt)
+  if (eventType !== event.type) {
+    const evt = new Event(eventType, {
+      cancelable: false,
+      bubbles: true,
+    })
+    event.target.dispatchEvent(evt)
+  }
 }
 
 function setupShim() {
@@ -97,7 +99,8 @@ function setupShim() {
 if (typeof document !== 'undefined') {
   fsVendorKeywords = getFullscreenApi()
   // Don't polyfill if it already exist
-  document[spec[1]] || setupShim()
+  const hasFullscreenEnabledProp = spec[1] in document
+  hasFullscreenEnabledProp || setupShim()
 }
 
 export default {}
