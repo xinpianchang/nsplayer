@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import commonjs from '@rollup/plugin-commonjs'
 import json from '@rollup/plugin-json'
 import resolve from '@rollup/plugin-node-resolve'
@@ -6,10 +5,6 @@ import babel from '@rollup/plugin-babel'
 import builtins from 'rollup-plugin-node-builtins'
 import { terser } from 'rollup-plugin-terser'
 import pkg from './package.json'
-
-// import nodePolyfills from 'rollup-plugin-node-polyfills'
-// import replace from '@rollup/plugin-replace'
-// import external from 'builtin-modules'
 
 const extensions = ['.js', '.ts']
 
@@ -38,6 +33,7 @@ const cjs = {
     format: 'cjs',
     indent: false,
     intro: 'var global = typeof self !== undefined ? self : this;',
+    exports: 'default',
   },
   external: makeExternalPredicate([
     ...Object.keys(pkg.dependencies || {}),
