@@ -352,7 +352,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       onFullscreenChange(fullscreenChangeHandler, null, disposables)
       onFullscreenError(fullscreenErrorHandler, null, disposables)
 
-      if (!this.supportFullscreen && this.supportNativeFullscreen) {
+      if (!this.supportFullscreen) {
         const onNativeFullscreenChange = Event.fromDOMEventEmitter<globalThis.Event>(video, [
           'webkitbeginfullscreen',
           'webkitendfullscreen',

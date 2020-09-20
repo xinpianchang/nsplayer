@@ -52,6 +52,7 @@ export interface IBasePlayer extends IDisposable {
 export interface BasePlayer extends BasePlayerWithEvent {
   /** video delegation begin */
   poster: string
+  playsInline: boolean
   readonly videoHeight: number
   readonly videoWidth: number
   autoplay: boolean
@@ -374,13 +375,14 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
   }
 
   public reset() {
-    if (this.video) {
-      this.video.pause()
-      this.video?.removeAttribute('src')
-      this.load()
+    const video = this.video
+    if (video) {
+      video.pause()
+      video.removeAttribute('src')
+      video.load()
       if (!this._paused) {
         // workaround to dispatch a pause event for completing the lifecycle
-        this.video.dispatchEvent(new window.Event('pause', { cancelable: true }))
+        video.dispatchEvent(new window.Event('pause', { cancelable: true }))
       }
     }
   }
@@ -419,6 +421,7 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
 
 delegates(BasePlayer.prototype, 'video')
   .access('poster')
+  .access('playsInline')
   .getter('videoHeight')
   .getter('videoWidth')
   .method('getVideoPlaybackQuality')

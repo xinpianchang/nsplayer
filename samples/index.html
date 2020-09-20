@@ -136,6 +136,7 @@
     <progress class="player-waiting"></progress>
     <button class="player-play">Play</button>
     <button class="player-fullscreen">Fullscreen</button>
+    <button class="player-pip">Enter PIP</button>
     <button class="player-airplay" style="display: none;">AirPlay</button>
     <div class="player-volume"></div>
     <button class="player-auto-play-error">恢复声音</button>
@@ -381,6 +382,19 @@
       }
     }
 
+    function updatePip() {
+      const button = $('.player-pip')
+      if (player.supportPictureInPicture) {
+        if (player.pictureInPicture) {
+          button.innerText = 'Leave PIP'
+        } else {
+          button.innerText = 'Enter PIP'
+        }
+      } else {
+        button.style.display = 'none'
+      }
+    }
+
     function updateAirplay(e) {
       if (e.availability === 'available') {
         $('.player-airplay').style.display = 'block'
@@ -430,10 +444,15 @@
     updateVolume()
     updatePlayback()
     updateLoop()
+    updatePip()
 
     $('button.player-switch-source').onclick = () => {
       player.setSource(mp4s, 3000000)
       updatePlayback()
+    }
+
+    $('.player-pip').onclick = () => {
+      player.togglePictureInPicture()
     }
 
     $('.player-rate').onclick = e => {
@@ -463,6 +482,7 @@
     player.onVolumeChange(showEvent)
     player.onEnterPictureInPicture(showEvent)
     player.onLeavePictureInPicture(showEvent)
+    player.onFullscreenChange(showEvent)
     // player.onDurationChange(showEvent)
     // player.onTimeUpdate(showEvent)
     // player.onProgress(showEvent)
@@ -487,6 +507,8 @@
     player.onRateChange(updatePlayback)
     player.onLoopChange(updateLoop)
     player.onWebkitPlaybackTargetAvailabilityChanged(updateAirplay)
+    player.onEnterPictureInPicture(updatePip)
+    player.onLeavePictureInPicture(updatePip)
 
     setInterval(updatePlayerStat, 500)
   </script>
