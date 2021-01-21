@@ -93,6 +93,7 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
     this._dashPlayer.updateSettings({
       streaming: {
         fastSwitchEnabled: this._fastSwitchEnabled,
+        liveCatchup: this._dashPlayer.getSettings().streaming?.liveCatchup || {},
       },
     })
 
@@ -167,6 +168,7 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
     dashPlayer.updateSettings({
       streaming: {
         fastSwitchEnabled: this._fastSwitchEnabled,
+        liveCatchup: this._dashPlayer.getSettings().streaming?.liveCatchup || {},
         abr: {
           autoSwitchBitrate: {
             [this._mediaType]: auto,
@@ -229,6 +231,7 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
     dashPlayer.updateSettings({
       streaming: {
         fastSwitchEnabled: this._fastSwitchEnabled,
+        liveCatchup: this._dashPlayer.getSettings().streaming?.liveCatchup || {},
         abr: {
           initialBitrate: {
             [this._mediaType]: bitrate / 1000,
