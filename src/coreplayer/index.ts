@@ -13,6 +13,7 @@ export interface QualityLevel {
   readonly width: number
   readonly height: number
   readonly type?: 'video' | 'audio' | 'image'
+  readonly fps?: number
 }
 
 export type PlayList = readonly QualityLevel[]
@@ -82,7 +83,7 @@ export interface ICorePlayer extends IDisposable {
  * @param id 指定的 ID，形如 br2000000-1920x1080-video / br1200000-1280x720
  */
 export function idToQualityLevel(id: string): QualityLevel | undefined {
-  const result = id.match(/^br(\d+)-(\d+)x(\d+)(?:-(video|audio))?$/)
+  const result = id.match(/^br(\d+)-(\d+)x(\d+)(?:-(video|audio))?(?:-(.*))?$/)
   if (result) {
     const level: { -readonly [k in keyof QualityLevel]: QualityLevel[k] } = {
       bitrate: parseInt(result[1]),
@@ -91,6 +92,16 @@ export function idToQualityLevel(id: string): QualityLevel | undefined {
     }
     if (result[4]) {
       level.type = result[4] as any
+    }
+    if (result[5]) {
+      try {
+        const fps = parseInt(result[5])
+        if (fps) {
+          level.fps = fps
+        }
+      } catch (_e: unknown) {
+        //
+      }
     }
     return level
   }
@@ -105,12 +116,38 @@ export function qualityLevelToId(level: QualityLevel): string {
   if (level.type) {
     id = `${id}-${level.type}`
   }
+  if (level.fps) {
+    id = `${id}-${level.fps}`
+  }
   return id
 }
 
 /** 播放质量 ID 是否为 auto 自动切换 */
 export function isAutoQuality(id: string): id is 'auto' {
   return id === 'auto'
+}
+
+/** 将任意 fps 字段转化为整数 fps，如果失败则返回 NaN */
+export function computeFPS(fps: string | undefined | number | null): number {
+  if (fps) {
+    if (typeof fps === 'number') {
+      return Math.round(fps)
+    }
+    if (fps.indexOf('/') > 0) {
+      const [a, b] = fps.split('/', 1)
+      try {
+        return Math.round(parseFloat(a) / parseFloat(b))
+      } catch (_e: unknown) {
+        // do nothing
+      }
+    }
+    try {
+      return Math.round(parseFloat(fps))
+    } catch (_e: unknown) {
+      // do nothing
+    }
+  }
+  return NaN
 }
 
 /** 两个播放质量是否同级 */
@@ -125,7 +162,8 @@ export function isSameLevel(
     level1.bitrate === level2.bitrate &&
     level1.width === level2.width &&
     level1.height === level2.height &&
-    (!level1.type || !level2.type || level1.type === level2.type)
+    (!level1.type || !level2.type || level1.type === level2.type) &&
+    (!level1.fps || !level2.fps || level1.fps === level2.fps)
   )
 }
 
@@ -162,7 +200,7 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
   protected abstract get nextLevel(): Level | undefined
   protected abstract get autoQualityEnabled(): boolean
   protected abstract levelToQuality(level: Level): QualityLevel
-  protected abstract findLevelIndexById(id: string): number
+  protected abstract findLevelIndexByQualityLevel(level: QualityLevel): number
   protected abstract setAutoQualityState(auto: boolean): void
   protected abstract setNextLevelIndex(index: number): void
 
@@ -292,6 +330,16 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
         this.setInitialBitrate(qualityLevel.bitrate)
       }
     }
+  }
+
+  private findLevelIndexById(id: string): number {
+    if (this.levels.length) {
+      const level = idToQualityLevel(id)
+      if (level) {
+        return this.findLevelIndexByQualityLevel(level)
+      }
+    }
+    return -1
   }
 
   /** 翻译当前 PlayList */

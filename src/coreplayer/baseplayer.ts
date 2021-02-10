@@ -1,4 +1,4 @@
-import { CorePlayer, SourceWithMimeType, QualityLevel, idToQualityLevel } from '.'
+import { CorePlayer, SourceWithMimeType, QualityLevel, computeFPS } from '.'
 import { toDisposable, DisposableStore, MutableDisposable, Event } from '@newstudios/common'
 import { Source } from '../types'
 
@@ -54,31 +54,26 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
   }
 
   protected levelToQuality(source: SourceWithDetail): QualityLevel {
+    const fps = computeFPS(source.fps)
     return {
       width: source.width,
       height: source.height,
       bitrate: source.bitrate,
       type: 'video',
+      ...(fps ? { fps } : {}),
     }
   }
 
-  protected findLevelIndexById(id: string) {
-    const playLevel = idToQualityLevel(id)
+  protected findLevelIndexByQualityLevel(playLevel: QualityLevel) {
     const levels = this.levels
-    if (playLevel && levels.length) {
-      // bitrate match
-      let idx = levels.findIndex(level => level.bitrate === playLevel.bitrate)
-      if (idx >= 0) {
-        return idx
-      }
-      // short side match
-      const shortSide = Math.min(playLevel.width, playLevel.height)
-      idx = levels.findIndex(level => Math.min(level.width, level.height) === shortSide)
-      if (idx >= 0) {
-        return idx
-      }
+    // bitrate match
+    const idx = levels.findIndex(level => level.bitrate === playLevel.bitrate)
+    if (idx >= 0) {
+      return idx
     }
-    return -1
+    // short side match
+    const shortSide = Math.min(playLevel.width, playLevel.height)
+    return levels.findIndex(level => Math.min(level.width, level.height) === shortSide)
   }
 
   protected setAutoQualityState(auto: boolean) {
@@ -114,7 +109,7 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
         }
       }
 
-      const onCanPlay = Event.fromDOMEventEmitter<globalThis.Event>(video, 'canplay')
+      const onCanPlay = Event.fromDOMEventEmitter(video, 'canplay')
       this._changeQualityDisposable.value = onCanPlay(reset)
     } else {
       console.error(`pause the video due to the next level ${index} unresolved in normalplayer`)

@@ -13,7 +13,7 @@ const makeExternalPredicate = externalArr => {
     return () => false
   }
   const pattern = new RegExp(`^(${externalArr.join('|')})($|/)`)
-  return id => pattern.test(id)
+  return id => id !== '@babel/runtime' && pattern.test(id)
 }
 
 const onwarn = (warning, warn) => {

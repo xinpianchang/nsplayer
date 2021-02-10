@@ -1,5 +1,11 @@
+/**
+ * @author TangYe
+ * Deprecated，很多问题没有 shakaplayer 处理的好，暂时放弃
+ *
+ * 但是接口定义比 shaka更加的友好，原声支持 typescript
+ */
 import { toDisposable, DisposableStore, Event } from '@newstudios/common'
-import { CorePlayer, SourceWithMimeType, QualityLevel, idToQualityLevel } from '.'
+import { CorePlayer, SourceWithMimeType, QualityLevel } from '.'
 import {
   MediaPlayer,
   MediaPlayerClass,
@@ -144,23 +150,16 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
     return level
   }
 
-  protected findLevelIndexById(id: string) {
-    const playLevel = idToQualityLevel(id)
+  protected findLevelIndexByQualityLevel(playLevel: QualityLevel) {
     const levels = this.levels
-    if (playLevel && levels.length) {
-      // bitrate match
-      let idx = levels.findIndex(level => level.bitrate === playLevel.bitrate)
-      if (idx >= 0) {
-        return idx
-      }
-      // short side match
-      const shortSide = Math.min(playLevel.width, playLevel.height)
-      idx = levels.findIndex(level => Math.min(level.width, level.height) === shortSide)
-      if (idx >= 0) {
-        return idx
-      }
+    // bitrate match
+    const idx = levels.findIndex(level => level.bitrate === playLevel.bitrate)
+    if (idx >= 0) {
+      return idx
     }
-    return -1
+    // short side match
+    const shortSide = Math.min(playLevel.width, playLevel.height)
+    return levels.findIndex(level => Math.min(level.width, level.height) === shortSide)
   }
 
   protected setAutoQualityState(auto: boolean) {

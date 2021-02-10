@@ -24,6 +24,7 @@ import {
   idToQualityLevel,
   isAutoQuality,
   isSameLevel,
+  computeFPS,
 } from './coreplayer'
 import { SourcePolicy, DefaultSourcePolicy } from './policy/source'
 import createCorePlayer from './createPlayer'
@@ -88,6 +89,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   public static readonly qualityLevelToId = qualityLevelToId
   public static readonly idToQualityLevel = idToQualityLevel
   public static readonly isAutoQuality = isAutoQuality
+  public static readonly computeFPS = computeFPS
   public static readonly isSameLevel = isSameLevel
   public static readonly formatTime = formatTime
   public static readonly getMimeType = getMimeType
@@ -348,8 +350,8 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       const fullscreenChangeHandler = (e: globalThis.Event) => this._onFullscreenChange.fire(e)
       const fullscreenErrorHandler = (e: globalThis.Event) => this._onFullscreenError.fire(e)
       const detachVideoHandler = () => this._onVideoDetach.fire(video)
-      const onFullscreenChange = Event.fromDOMEventEmitter<globalThis.Event>(el, 'fullscreenchange')
-      const onFullscreenError = Event.fromDOMEventEmitter<globalThis.Event>(el, 'fullscreenerror')
+      const onFullscreenChange = Event.fromDOMEventEmitter(el, 'fullscreenchange')
+      const onFullscreenError = Event.fromDOMEventEmitter(el, 'fullscreenerror')
       const disposables: IDisposable[] = []
 
       onFullscreenChange(fullscreenChangeHandler, null, disposables)

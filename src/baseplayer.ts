@@ -110,7 +110,7 @@ function fixAutoPlayPolicy(this: BasePlayer, video: HTMLVideoElement, disposable
   }
 
   const onAutoPlayError = Event.filter(
-    Event.once(Event.fromDOMEventEmitter<ErrorEvent>(video, 'error')),
+    Event.once(Event.fromDOMEventEmitter(video, 'error')),
     evt => {
       const { error: err = this.error } = evt
       return (
@@ -153,9 +153,9 @@ function fixPauseEvent(this: BasePlayer, video: HTMLVideoElement, disposables?: 
     }
   }
 
-  const onPlay = Event.fromDOMEventEmitter<globalThis.Event>(video, 'play')
+  const onPlay = Event.fromDOMEventEmitter(video, 'play')
   onPlay(evt => setPaused(false, evt), null, disposables)
-  const onPause = Event.fromDOMEventEmitter<globalThis.Event>(video, 'pause')
+  const onPause = Event.fromDOMEventEmitter(video, 'pause')
   onPause(evt => setPaused(true, evt), null, disposables)
 }
 

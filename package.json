@@ -68,7 +68,7 @@
     "@babel/preset-typescript": "^7.12.7",
     "@commitlint/cli": "^11.0.0",
     "@commitlint/config-conventional": "^11.0.0",
-    "@newstudios/common": "^0.2.1",
+    "@newstudios/common": "^0.2.2",
     "@rollup/plugin-babel": "^5.2.2",
     "@rollup/plugin-commonjs": "^17.0.0",
     "@rollup/plugin-json": "^4.1.0",
@@ -98,10 +98,11 @@
     "@babel/runtime": "^7.12.5",
     "dashjs": "^3.2.0",
     "delegates": "^1.0.0",
-    "hls.js": "^0.14.17"
+    "hls.js": "^0.14.17",
+    "shaka-player": "^3.0.7"
   },
   "npmName": "nsplayer",
   "peerDependencies": {
-    "@newstudios/common": "^0.2.1"
+    "@newstudios/common": "^0.2.2"
   }
 }

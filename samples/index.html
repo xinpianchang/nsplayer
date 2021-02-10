@@ -197,13 +197,20 @@
     window.player = new NSPlayer({
       selector: 'div.container',
       source: [
+        // {
+        //   src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/8f431d7b-8709-4877-b751-4911b2b01d39/index.mpd',
+        // },
         {
-          src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8',
+          src: 'https://mod-api-test.xinpianchang.com/dash/dMzkmwJMblK7xjXp/index.mpd?appKey=780f69613bc1adeea&token=&expiredAt=0&extend=userInfo%2CuserStatus',
+          mime: 'application/dash+xml',
         },
-        {
-          src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd',
-        },
-        ...mp4s,
+        // {
+        //   src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/8f431d7b-8709-4877-b751-4911b2b01d39/index.m3u8',
+        // },
+        // {
+        //   src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd',
+        // },
+        // ...mp4s,
       ],
       initialBitrate: 3000000,
       autoplay: true,

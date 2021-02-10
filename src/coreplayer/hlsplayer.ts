@@ -6,7 +6,7 @@ import {
   Event,
   onUnexpectedError,
 } from '@newstudios/common'
-import { CorePlayer, SourceWithMimeType, idToQualityLevel, QualityLevel } from '.'
+import { CorePlayer, SourceWithMimeType, QualityLevel } from '.'
 
 const supportMSE = Hls.isSupported()
 
@@ -57,26 +57,19 @@ export class HlsPlayer extends CorePlayer<Hls.Level> {
     if (hlsLevel.videoCodec) {
       level.type = 'video'
     }
+    console.log(hlsLevel.attrs)
     return level
   }
 
-  protected findLevelIndexById(id: string) {
-    const playLevel = idToQualityLevel(id)
-    const levels = this.levels
-    if (playLevel && levels.length) {
-      // bitrate match
-      let idx = levels.findIndex(level => level.bitrate === playLevel.bitrate)
-      if (idx >= 0) {
-        return idx
-      }
-      // short side match
-      const shortSide = Math.min(playLevel.width, playLevel.height)
-      idx = levels.findIndex(level => Math.min(level.width, level.height) === shortSide)
-      if (idx >= 0) {
-        return idx
-      }
+  protected findLevelIndexByQualityLevel(playLevel: QualityLevel) {
+    // bitrate match
+    const idx = this.levels.findIndex(level => level.bitrate === playLevel.bitrate)
+    if (idx >= 0) {
+      return idx
     }
-    return -1
+    // short side match
+    const shortSide = Math.min(playLevel.width, playLevel.height)
+    return this.levels.findIndex(level => Math.min(level.width, level.height) === shortSide)
   }
 
   protected setAutoQualityState(auto: boolean) {
