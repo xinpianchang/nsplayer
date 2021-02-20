@@ -198,6 +198,14 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     this._register(this._delayQualitySwitchRequest)
     this._register(this._corePlayerRef)
     this._register(toDisposable(() => this._corePlayerCreateCounter++))
+    this._register(
+      toDisposable(() => {
+        if (this._containerTimer) {
+          clearTimeout(this._containerTimer)
+          this._containerTimer = 0
+        }
+      })
+    )
     this.onPause(this._onQualitySwitchStart.pause, this._onQualitySwitchStart)
     this.onPlay(this._onQualitySwitchStart.resume, this._onQualitySwitchStart)
     this.onPause(this._onQualitySwitchEnd.pause, this._onQualitySwitchEnd)
@@ -310,6 +318,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
 
     this._containerTimer = window.setTimeout(() => {
       this._containerTimer = 0
+      this._disposableParentElement.value = undefined
       this._disposableParentElement.value = this._registerContainerListeners(el)
     })
   }
