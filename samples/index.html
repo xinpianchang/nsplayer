@@ -33,11 +33,13 @@
     }
     div.controller .container2 {
       position: relative;
-      height: 240px;
-      border: 1px solid #999999;
+      height: auto;
+      overflow: hidden;
     }
     div.controller .container2 > * {
       width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #999999;
     }
     div.quality-level {
       padding: 3px 6px;
@@ -132,6 +134,11 @@
       border: 1px solid white;
       background: rgba(244, 244, 244, 0.4);
     }
+    div.btn-list {
+      display: flex;
+      justify-content: left;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
@@ -168,8 +175,11 @@
       <span class="bufferhealth"></span>
       <span class="codec"></span>
     </div>
-    <button class="player-switch-source">更换 Source</button>
-    <button class="player-switch-container">更换 Container</button>
+    <div class="btn-list">
+      <button class="player-stop">停止播放</button>
+      <button class="player-switch-source">更换 Source</button>
+      <button class="player-switch-container">更换 Container</button>
+    </div>
     <div class="container2"></div>
   </div>
   <!-- <script src="../dist/index.umd.js"></script> -->
@@ -208,8 +218,7 @@
     const $ = document.querySelector.bind(document)
     const $$ = document.querySelectorAll.bind(document)
 
-    window.player = new NSPlayer({
-      selector: 'div.container',
+    const defaultSource = {
       source: [
         // {
         //   src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/8f431d7b-8709-4877-b751-4911b2b01d39/index.mpd',
@@ -231,6 +240,12 @@
         // ...mp4s,
       ],
       initialBitrate: 3000000,
+    }
+
+    window.player = new NSPlayer({
+      selector: 'div.container',
+      source: defaultSource.source,
+      initialBitrate: defaultSource.initialBitrate,
       autoplay: true,
       controls: true,
       abrFastSwitch: true,
@@ -476,6 +491,17 @@
     updatePlayback()
     updateLoop()
     updatePip()
+
+    $('button.player-stop').onclick = () => {
+      if ($('button.player-stop').innerText === '停止播放') {
+        $('button.player-stop').innerText = '加载播放'
+        player.stop()
+      } else {
+        $('button.player-stop').innerText = '停止播放'
+        player.setSource(defaultSource.source, defaultSource.initialBitrate)
+      }
+      updatePlayback()
+    }
 
     $('button.player-switch-source').onclick = () => {
       player.setSource(mp4s, 3000000)

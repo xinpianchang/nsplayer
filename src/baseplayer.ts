@@ -70,6 +70,7 @@ export interface BasePlayer extends BasePlayerWithEvent {
   readonly paused: boolean
   playbackRate: number
   defaultPlaybackRate: number
+  defaultInitialBitrate: number
   readonly played: TimeRanges
   preload: string
   readonly readyState: number
@@ -197,6 +198,8 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
     }
     return this._loop
   }
+
+  public defaultInitialBitrate = 0
 
   public exitFullscreen({ fallback = 'never' } = {}): Promise<void> {
     if (this.supportFullscreen) {
@@ -374,7 +377,7 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
     }
   }
 
-  public reset() {
+  protected reset() {
     const video = this.video
     if (video) {
       video.pause()

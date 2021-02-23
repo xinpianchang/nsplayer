@@ -254,8 +254,12 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
         this.video.defaultPlaybackRate = opt.playbackRate
       }
 
+      if (opt.initialBitrate) {
+        this.defaultInitialBitrate = opt.initialBitrate
+      }
+
       if (opt.source) {
-        this.setSource(opt.source, opt.initialBitrate)
+        this.setSource(opt.source)
       }
     }
   }
@@ -489,6 +493,8 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
 
             if (initialBitrate) {
               corePlayer.setInitialBitrate(initialBitrate)
+            } else if (this.defaultInitialBitrate) {
+              corePlayer.setInitialBitrate(this.defaultInitialBitrate)
             }
 
             if (!isAutoQuality(this._requestedQualityId)) {
@@ -512,7 +518,11 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     return false
   }
 
-  public reset() {
+  public stop() {
+    this.setSource([])
+  }
+
+  protected reset() {
     if (this.video) {
       const autoplay = this.autoplay
       this.playbackRate = this.opt.playbackRate || 1
