@@ -57,7 +57,6 @@ export class HlsPlayer extends CorePlayer<Hls.Level> {
     if (hlsLevel.videoCodec) {
       level.type = 'video'
     }
-    console.log(hlsLevel.attrs)
     return level
   }
 

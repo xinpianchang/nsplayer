@@ -4,6 +4,7 @@ import resolve from '@rollup/plugin-node-resolve'
 import babel from '@rollup/plugin-babel'
 import builtins from 'rollup-plugin-node-builtins'
 import { terser } from 'rollup-plugin-terser'
+import serve from './rollup.devserver'
 import pkg from './package.json'
 
 const extensions = ['.js', '.ts']
@@ -112,12 +113,11 @@ const mjs = {
       babelHelpers: 'runtime',
     }),
     terser(),
+    ...(process.env.NODE_ENV === 'development' ? [serve()] : []),
   ],
 }
 
+const configs = process.env.NODE_ENV === 'development' ? [mjs] : [cjs, ejs, mjs]
+
 // eslint-disable-next-line prettier/prettier
-export default [
-  cjs,
-  ejs,
-  mjs,
-]
+export default configs

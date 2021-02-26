@@ -177,70 +177,146 @@
     </div>
     <div class="btn-list">
       <button class="player-stop">停止播放</button>
-      <button class="player-switch-source">更换 Source</button>
       <button class="player-switch-container">更换 Container</button>
+      <button class="player-switch-source">更换 Mp4</button>
+      <button class="player-switch-hls">更换 Hls</button>
+      <button class="player-switch-dash">更换 Dash</button>
     </div>
     <div class="container2"></div>
   </div>
   <!-- <script src="../dist/index.umd.js"></script> -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vConsole/3.3.4/vconsole.min.js"></script>
   <script>
-      var vConsole = new VConsole();
-      console.log('vconsole setup done');
+      var canTouch = !!(('ontouchstart' in window) || window.DocumentTouch && document instanceof window.DocumentTouch)
+      if (canTouch) {
+        var vConsole = new VConsole()
+        console.log('vconsole setup done for touchable device')
+      }
   </script>
   <script type="module">
     import NSPlayer from '../dist/mjs/index.mjs'
     const { qualityLevelToId, idToQualityLevel } = NSPlayer
-    // https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd
-    // https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.m3u8
-    // https://qiniu-xpc4.xpccdn.com/5ed504422a766.mp4
+
     const mp4s = [
       {
-        src: "https://ks-xpctest4.xpccdn.com/7db48dcb-bc9e-4a29-85be-51f7839cdc6e.mp4",
-        bitrate: 10062123,
-        width: 3840,
-        height: 2160,
+        "resourceId": 5606634,
+        "vendor": "ksyun",
+        "bucket": "xpc-bj",
+        "profile": "超清 2160p",
+        "quality": "4k",
+        "mime": "video/mp4",
+        "bitrate": 16107120,
+        "fps": "25/1",
+        "codecName": "h264 / aac",
+        "codedWidth": 3840,
+        "codedHeight": 2160,
+        "filesize": 352381510,
+        "width": 3840,
+        "height": 2160,
+        "src": "https://ks-xpc17.xpccdn.com/6393e6e0-fab0-44f5-b197-0936076d0537.mp4",
       },
       {
-        src: "https://ks-xpctest4.xpccdn.com/4c070116-76a8-4960-855d-3672cc02fbfd.mp4",
-        bitrate: 2514821,
-        width: 1280,
-        height: 720,
+        "resourceId": 5606628,
+        "vendor": "ksyun",
+        "bucket": "xpc-bj",
+        "profile": "超清 1440p",
+        "quality": "2k",
+        "mime": "video/mp4",
+        "bitrate": 8088055,
+        "fps": "25/1",
+        "codecName": "h264 / aac",
+        "codedWidth": 2560,
+        "codedHeight": 1440,
+        "filesize": 176945414,
+        "width": 2560,
+        "height": 1440,
+        "src": "https://ks-xpc17.xpccdn.com/a4865a0e-62d4-4134-b28d-e610a24e7753.mp4",
       },
       {
-        src: "https://ks-xpctest4.xpccdn.com/2c55e699-0d02-4e05-8573-f44efca0cfad.mp4",
-        bitrate: 1630269,
-        width: 960,
-        height: 540,
+        "resourceId": 5606624,
+        "vendor": "ksyun",
+        "bucket": "xpc-bj",
+        "profile": "高清 1080p",
+        "quality": "1080p",
+        "mime": "video/mp4",
+        "bitrate": 5078431,
+        "fps": "25/1",
+        "codecName": "h264 / aac",
+        "codedWidth": 1920,
+        "codedHeight": 1088,
+        "filesize": 111102753,
+        "width": 1920,
+        "height": 1080,
+        "src": "https://ks-xpc17.xpccdn.com/09bb3824-a865-4d33-88a1-87607fc931c0.mp4",
+      },
+      {
+        "resourceId": 5606622,
+        "vendor": "ksyun",
+        "bucket": "xpc-bj",
+        "profile": "标清 720p",
+        "quality": "720p",
+        "mime": "video/mp4",
+        "bitrate": 2473679,
+        "fps": "25/1",
+        "codecName": "h264 / aac",
+        "codedWidth": 1280,
+        "codedHeight": 720,
+        "filesize": 54117606,
+        "width": 1280,
+        "height": 720,
+        "src": "https://ks-xpc17.xpccdn.com/f016cbdf-ca21-4aa7-bdcd-367d861edd69.mp4",
+      },
+      {
+        "resourceId": 5606623,
+        "vendor": "ksyun",
+        "bucket": "xpc-bj",
+        "profile": "清晰 540p",
+        "quality": "540p",
+        "mime": "video/mp4",
+        "bitrate": 1573977,
+        "fps": "25/1",
+        "codecName": "h264 / aac",
+        "codedWidth": 960,
+        "codedHeight": 544,
+        "filesize": 34434491,
+        "width": 960,
+        "height": 540,
+        "src": "https://ks-xpc17.xpccdn.com/fe066e80-b835-485b-b37c-997feac4759d.mp4",
+      },
+      {
+        "resourceId": 5606621,
+        "vendor": "ksyun",
+        "bucket": "xpc-bj",
+        "profile": "流畅 360p",
+        "quality": "360p",
+        "mime": "video/mp4",
+        "bitrate": 269662,
+        "fps": "25/1",
+        "codecName": "h264 / aac",
+        "codedWidth": 640,
+        "codedHeight": 368,
+        "filesize": 5899502,
+        "width": 640,
+        "height": 360,
+        "src": "https://ks-xpc17.xpccdn.com/24d049bc-7283-4a44-bad6-2d94c7227be7.mp4",
       }
     ]
 
-    const $ = document.querySelector.bind(document)
-    const $$ = document.querySelectorAll.bind(document)
+    const hls = [
+      { src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/8f431d7b-8709-4877-b751-4911b2b01d39/index.m3u8' },
+    ]
+
+    const dash = [
+      { src: 'https://mod-api-test.xinpianchang.com/dash/60VAm7ONJkoQDRnW/index.mpd?appKey=780f69613bc1adeea&cacheVersion=1614345283&extend=userInfo%2CuserStatus', mime: 'application/dash+xml' },
+    ]
 
     const defaultSource = {
-      source: [
-        // {
-        //   src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/8f431d7b-8709-4877-b751-4911b2b01d39/index.mpd',
-        // },
-        // {
-        //   src: 'https://mod-api-test.xinpianchang.com/dash/dMzkmwJMblK7xjXp/index.mpd?appKey=780f69613bc1adeea&token=&expiredAt=0&extend=userInfo%2CuserStatus',
-        //   mime: 'application/dash+xml',
-        // },
-        {
-          src: 'https://mod-api-test.xinpianchang.com/dash/ArVo9wydW3N7l5PG/index.mpd?appKey=780f69613bc1adeea&cacheVersion=1613706978&extend=userInfo%2CuserStatus',
-          mime: 'application/dash+xml',
-        }
-        // {
-        //   src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/8f431d7b-8709-4877-b751-4911b2b01d39/index.m3u8',
-        // },
-        // {
-        //   src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/5c4a91bb9ee41_dash_hls_playlist.mpd',
-        // },
-        // ...mp4s,
-      ],
+      source: [].concat(mp4s).concat(hls).concat(dash),
       initialBitrate: 3000000,
     }
+
+    const $ = document.querySelector.bind(document)
+    const $$ = document.querySelectorAll.bind(document)
 
     window.player = new NSPlayer({
       selector: 'div.container',
@@ -505,6 +581,19 @@
 
     $('button.player-switch-source').onclick = () => {
       player.setSource(mp4s, 3000000)
+      $('button.player-stop').innerText = '停止播放'
+      updatePlayback()
+    }
+
+    $('button.player-switch-hls').onclick = () => {
+      player.setSource(hls, 3000000)
+      $('button.player-stop').innerText = '停止播放'
+      updatePlayback()
+    }
+
+    $('button.player-switch-dash').onclick = () => {
+      player.setSource(dash, 3000000)
+      $('button.player-stop').innerText = '停止播放'
       updatePlayback()
     }
 

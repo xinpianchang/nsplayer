@@ -26,7 +26,7 @@ import {
   isSameLevel,
   computeFPS,
 } from './coreplayer'
-import { SourcePolicy, DefaultSourcePolicy } from './policy/source'
+import { SourcePolicy, DefaultSourcePolicy, areSourcesEqual } from './policy/source'
 import createCorePlayer from './createPlayer'
 import './fullscreen-polyfill'
 
@@ -467,9 +467,17 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     }
   }
 
+  public getSource() {
+    return this._sources.slice()
+  }
+
   public setSource(sources: Source | Source[], initialBitrate?: number): boolean {
     if (!Array.isArray(sources)) {
       return this.setSource([sources], initialBitrate)
+    }
+
+    if (areSourcesEqual(this._sources, sources)) {
+      return false
     }
 
     this.reset()

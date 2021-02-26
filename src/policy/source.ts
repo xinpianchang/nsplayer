@@ -74,3 +74,16 @@ export const DefaultSourcePolicy: SourcePolicy = sources => {
     return sourceMap.mp4[0]
   }
 }
+
+const sourceKeys = ['src', 'bitrate', 'fps', 'height', 'width', 'mime'] as const
+
+export function isSourceEqual(s1: Source, s2: Source) {
+  return sourceKeys.every(k => s1[k] === s2[k])
+}
+
+export function areSourcesEqual(s1: Source[], s2: Source[]) {
+  if (s1.length !== s2.length) {
+    return false
+  }
+  return s1.every((s, idx) => isSourceEqual(s, s2[idx]))
+}
