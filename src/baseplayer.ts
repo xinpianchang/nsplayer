@@ -379,7 +379,7 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
 
   protected reset() {
     const video = this.video
-    if (video) {
+    if (video && video.hasAttribute('src')) {
       video.pause()
       video.removeAttribute('src')
       video.load()

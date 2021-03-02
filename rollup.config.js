@@ -5,6 +5,7 @@ import babel from '@rollup/plugin-babel'
 import builtins from 'rollup-plugin-node-builtins'
 import { terser } from 'rollup-plugin-terser'
 import serve from './rollup.devserver'
+import replace from '@rollup/plugin-replace'
 import pkg from './package.json'
 
 const extensions = ['.js', '.ts']
@@ -25,6 +26,20 @@ const onwarn = (warning, warn) => {
   warn(warning)
 }
 
+const plugins = [
+  json(),
+  builtins(),
+  replace({
+    preventAssignment: true,
+    values: { PLAYER_VERSION: JSON.stringify(pkg.version) },
+  }),
+  resolve({
+    extensions,
+    preferBuiltins: false,
+  }),
+  commonjs({ sourceMap: false }),
+]
+
 // CommonJS
 const cjs = {
   onwarn,
@@ -41,13 +56,7 @@ const cjs = {
     ...Object.keys(pkg.peerDependencies || {}),
   ]),
   plugins: [
-    json(),
-    builtins(),
-    resolve({
-      extensions,
-      preferBuiltins: false,
-    }),
-    commonjs({ sourceMap: false }),
+    ...plugins,
     babel({
       extensions,
       include: ['src/**/*'],
@@ -71,13 +80,7 @@ const ejs = {
     ...Object.keys(pkg.peerDependencies || {}),
   ]),
   plugins: [
-    json(),
-    builtins(),
-    resolve({
-      extensions,
-      preferBuiltins: false,
-    }),
-    commonjs({ sourceMap: false }),
+    ...plugins,
     babel({
       extensions,
       include: ['src/**/*'],
@@ -99,13 +102,7 @@ const mjs = {
     intro: 'var global = typeof self !== undefined ? self : this;',
   },
   plugins: [
-    json(),
-    builtins(),
-    resolve({
-      extensions,
-      preferBuiltins: false,
-    }),
-    commonjs({ sourceMap: false }),
+    ...plugins,
     babel({
       extensions,
       exclude: 'node_modules/**',

@@ -176,9 +176,9 @@ export function isSafari() {
   return !chr && sfri
 }
 
-export function assert(target: any): asserts target is true {
+export function assert<T>(target: T, message?: string): asserts target is NonNullable<T> {
   if (!target) {
-    throw new Error(`expect target but get [${target}]`)
+    throw new Error(message ?? `expect target but get [${target}]`)
   }
 }
 

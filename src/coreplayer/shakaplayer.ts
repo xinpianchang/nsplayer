@@ -23,7 +23,7 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
     return false
   })()
 
-  private _shakaPlayer: shaka.Player & Event.DOMEventEmitter
+  private _shakaPlayer: shaka.Player
   private _nextTrack: shaka.extern.Track | undefined
   private _videoSizeObserverTimer = this._register(new IntervalTimer())
   private _videoWidth = 0
@@ -36,7 +36,7 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
   constructor(video: HTMLVideoElement, source: SourceWithMimeType, private _fastSwitch: boolean) {
     super(video, source)
 
-    const player = new shaka.Player(video)
+    const player = new shaka.Player()
     this._shakaPlayer = player as shaka.Player
 
     this.debugError()
@@ -70,7 +70,7 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
   }
 
   public get name(): string {
-    return `ShakaPlayer (${shaka.Player.version})`
+    return `SHAKAPlayer (${shaka.Player.version})`
   }
 
   public get supportAutoQuality(): boolean {
@@ -154,6 +154,7 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
 
   protected onInit(video: HTMLVideoElement, source: SourceWithMimeType): void {
     const player = this._shakaPlayer
+    player.attach(video)
     player.load(source.src, 0, source.mime)
 
     const disposables = new DisposableStore()

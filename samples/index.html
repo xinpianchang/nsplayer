@@ -178,9 +178,14 @@
     <div class="btn-list">
       <button class="player-stop">停止播放</button>
       <button class="player-switch-container">更换 Container</button>
+    </div>
+    <div class="btn-list">
+      <!-- <button class="player-switch-source">更换 Mp4 2</button>
+      <button class="player-switch-hls">更换 Hls 2</button> -->
       <button class="player-switch-source">更换 Mp4</button>
       <button class="player-switch-hls">更换 Hls</button>
       <button class="player-switch-dash">更换 Dash</button>
+      <button class="player-switch-dash2">更换 Dash 2</button>
     </div>
     <div class="container2"></div>
   </div>
@@ -307,6 +312,14 @@
     ]
 
     const dash = [
+      { src: 'http://dev-mod-server-api.vmovier.cc/dash/yro1V7E1el7dXAMO/index.mpd?appKey=780f69613bc1adeea&cacheVersion=1614662861&extend=userInfo%2CuserStatus', mime: 'application/dash+xml' }
+    ]
+
+    const dash2 = [
+      { src: 'http://dev-mod-server-api.vmovier.cc/dash/yro1V7E1el7dXAMO/index.mpd?appKey=780f69613bc1adeea&cacheVersion=1614662862&extend=userInfo%2CuserStatus', mime: 'application/dash+xml' },
+    ]
+
+    const dash3 = [
       { src: 'https://mod-api-test.xinpianchang.com/dash/60VAm7ONJkoQDRnW/index.mpd?appKey=780f69613bc1adeea&cacheVersion=1614345283&extend=userInfo%2CuserStatus', mime: 'application/dash+xml' },
     ]
 
@@ -353,7 +366,7 @@
 
     function updatePlayList() {
       const playList = player.currentPlayList
-      $('.player-name').innerText = player.currentPlayerName
+      $('.player-name').innerText = 'Base: v' + player.version + ' - ' + player.currentPlayerName
       $('.player-list').innerHTML = ''
 
       if (player.supportAutoQuality) {
@@ -569,31 +582,39 @@
     updatePip()
 
     $('button.player-stop').onclick = () => {
-      if ($('button.player-stop').innerText === '停止播放') {
-        $('button.player-stop').innerText = '加载播放'
+      if (player.hasSource()) {
         player.stop()
       } else {
-        $('button.player-stop').innerText = '停止播放'
         player.setSource(defaultSource.source, defaultSource.initialBitrate)
       }
       updatePlayback()
     }
 
+    player.onLoad(() => {
+      $('button.player-stop').innerText = '停止播放'
+    })
+
+    player.onReset(() => {
+      $('button.player-stop').innerText = '加载播放'
+    })
+
     $('button.player-switch-source').onclick = () => {
       player.setSource(mp4s, 3000000)
-      $('button.player-stop').innerText = '停止播放'
       updatePlayback()
     }
 
     $('button.player-switch-hls').onclick = () => {
       player.setSource(hls, 3000000)
-      $('button.player-stop').innerText = '停止播放'
       updatePlayback()
     }
 
     $('button.player-switch-dash').onclick = () => {
       player.setSource(dash, 3000000)
-      $('button.player-stop').innerText = '停止播放'
+      updatePlayback()
+    }
+
+    $('button.player-switch-dash2').onclick = () => {
+      player.setSource(dash2, 3000000)
       updatePlayback()
     }
 
@@ -640,6 +661,8 @@
     // player.onDurationChange(showEvent)
     // player.onTimeUpdate(showEvent)
     // player.onProgress(showEvent)
+    player.onReset(showEvent)
+
     player.onSeeking(showEvent)
     player.onSeeked(showEvent)
     player.onCanPlay(showEvent)
