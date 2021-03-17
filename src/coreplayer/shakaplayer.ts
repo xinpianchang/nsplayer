@@ -39,6 +39,9 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
     const player = new shaka.Player()
     this._shakaPlayer = player as shaka.Player
 
+    // https://github.com/google/shaka-player/pull/2330/commits/4f8e1286610e4ae667f0bb82f4f4fa97b451595c
+    this._shakaPlayer.configure('manifest.dash.ignoreEmptyAdaptationSet', true)
+
     this.debugError()
     this._register(toDisposable(() => player.destroy()))
   }

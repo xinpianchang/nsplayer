@@ -139,6 +139,9 @@
       justify-content: left;
       align-items: center;
     }
+    input.player-seeker {
+      width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -178,6 +181,8 @@
     <div class="btn-list">
       <button class="player-stop">停止播放</button>
       <button class="player-switch-container">更换 Container</button>
+      <input id="fseek" type="checkbox" class="player-fastseek" checked />
+      <label for="fseek">FastSeek</label>
     </div>
     <div class="btn-list">
       <!-- <button class="player-switch-source">更换 Mp4 2</button>
@@ -187,6 +192,7 @@
       <button class="player-switch-dash">更换 Dash</button>
       <button class="player-switch-dash2">更换 Dash 2</button>
     </div>
+    <input type="range" class="player-seeker" min="0" max="0" value="0" step="0.001" />
     <div class="container2"></div>
   </div>
   <!-- <script src="../dist/index.umd.js"></script> -->
@@ -312,11 +318,11 @@
     ]
 
     const dash = [
-      { src: 'http://dev-mod-server-api.vmovier.cc/dash/yro1V7E1el7dXAMO/index.mpd?appKey=780f69613bc1adeea&cacheVersion=1614662861&extend=userInfo%2CuserStatus', mime: 'application/dash+xml' }
+      { src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/8f431d7b-8709-4877-b751-4911b2b01d39/index.mpd', mime: 'application/dash+xml' }
     ]
 
     const dash2 = [
-      { src: 'http://dev-mod-server-api.vmovier.cc/dash/yro1V7E1el7dXAMO/index.mpd?appKey=780f69613bc1adeea&cacheVersion=1614662862&extend=userInfo%2CuserStatus', mime: 'application/dash+xml' },
+      { src: 'https://mod-api-test.xinpianchang.com/dash/9POpZQXEPvV7Er5a/index.mpd?appKey=780f69613bc1adeea&extend=userInfo%2CuserStatus&sign=e69dbed43c537022c6ec9bc19cbdcf55&signExpiredAt=1615985474', mime: 'application/dash+xml' },
     ]
 
     const dash3 = [
@@ -469,12 +475,52 @@
 
     $('.player-current').innerText = qualityIdToText(player.currentQualityId)
 
+    let seeking = false
+    let playing = false
+
     function updateTime() {
       const currentTime = NSPlayer.formatTime(player.currentTime, 'm:ss')
       if (player.duration) {
         $('.player-time').innerText = currentTime + ' / ' + NSPlayer.formatTime(player.duration, 'm:ss')
+
+        if (!seeking) {
+          $('.player-seeker').max = player.duration
+          $('.player-seeker').value = player.currentTime
+        }
       } else {
         $('.player-time').innerText = currentTime
+
+        if (!seeking) {
+          $('.player-seeker').max = 0
+          $('.player-seeker').value = 0
+        }
+      }
+    }
+
+    const fastSeekChecked = $('input.player-fastseek')
+
+    $('.player-seeker').oninput = e => {
+      if (player.duration) {
+        if (!player.paused) {
+          playing = true
+          player.pause()
+        }
+
+        const time = Number(e.target.value)
+        if (fastSeekChecked.chekced) {
+          player.fastSeek(time)
+        } else {
+          player.currentTime = time
+        }
+      }
+      seeking = true
+    }
+
+    $('.player-seeker').onchange = e => {
+      seeking = false
+      if (playing) {
+        playing = false
+        player.play()
       }
     }
 

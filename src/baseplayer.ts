@@ -420,6 +420,33 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
     const end = this.buffered.end(idx)
     return end < c ? c : end
   }
+
+  private _nextSeek = 0
+
+  public fastSeek(time: number) {
+    const video = this.withVideo()
+
+    if (!video.seekable) {
+      return
+    }
+
+    if (time === video.currentTime) {
+      return
+    }
+
+    this._nextSeek = time
+
+    if (!video.seeking) {
+      video.currentTime = time
+      this._nextSeek = video.currentTime
+
+      Event.once(this.onSeeked)(() => {
+        if (this._nextSeek !== video.currentTime) {
+          this.fastSeek(this._nextSeek)
+        }
+      })
+    }
+  }
 }
 
 delegates(BasePlayer.prototype, 'video')
