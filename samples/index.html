@@ -83,7 +83,7 @@
     progress.player-waiting {
       visibility: hidden;
     }
-    div.container video {
+    video {
       width: 100%;
       height: 100%;
       background-color: black;
@@ -158,6 +158,7 @@
     <progress class="player-waiting"></progress>
     <button class="player-play">Play</button>
     <button class="player-fullscreen">Fullscreen</button>
+    <button class="player-window-fullscreen">Window Fullscreen</button>
     <button class="player-pip">Enter PIP</button>
     <button class="player-airplay" style="display: none;">AirPlay</button>
     <div class="player-volume"></div>
@@ -397,6 +398,7 @@
       $(`#${player.requestedQualityId}`).classList.add('selected')
       $('.player-play').onclick = () => player.toggle()
       $('.player-fullscreen').onclick = () => player.toggleFullscreen({ fallback: 'native' })
+      $('.player-window-fullscreen').onclick = () => player.toggleWindowFullscreen()
     }
 
     function requestQuality() {
@@ -703,7 +705,7 @@
     player.onVolumeChange(showEvent)
     player.onEnterPictureInPicture(showEvent)
     player.onLeavePictureInPicture(showEvent)
-    player.onFullscreenChange(showEvent)
+    player.onWindowFullscreenChange(showEvent)
     // player.onDurationChange(showEvent)
     // player.onTimeUpdate(showEvent)
     // player.onProgress(showEvent)

@@ -100,6 +100,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   public static readonly getMimeType = getMimeType
 
   private _el: HTMLElement | null = null
+  private _originalContainer: HTMLElement | null = null
   private _disposableParentElement = new MutableDisposable()
   private _delayQualitySwitchRequest = new MutableDisposable()
   private _corePlayerRef = new MutableDisposable<ICorePlayer>()
@@ -116,6 +117,9 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
 
   protected readonly _onFullscreenError = this._register(new Emitter<globalThis.Event>())
   public readonly onFullscreenError = this._onFullscreenError.event
+
+  protected readonly _onWindowFullscreenChange = this._register(new Emitter<CustomEvent<boolean>>())
+  public readonly onWindowFullscreenChange = this._onWindowFullscreenChange.event
 
   protected readonly _onVideoAttach = this._register(new Emitter<HTMLVideoElement>())
   public readonly onVideoAttach = this._onVideoAttach.event
@@ -142,6 +146,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   public readonly onReset = this._onReset.event
 
   private readonly _emitterErrorMutable = this._register(new MutableDisposable())
+  private readonly _onEscKeyDownMutable = this._register(new MutableDisposable())
 
   protected readonly _onQualitySwitchStart = this._register(
     new PauseableEmitter<QualityLevel>({
@@ -225,6 +230,17 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     this.onPause(this._onQualitySwitchEnd.pause, this._onQualitySwitchEnd)
     this.onPlay(this._onQualitySwitchEnd.resume, this._onQualitySwitchEnd)
     this.onQualitySwitchEnd(() => (this._delayQualitySwitchRequest.value = undefined))
+    this.onWindowFullscreenChange(e => {
+      if (e.detail) {
+        const onEscKeydown = Event.filter(
+          Event.fromDOMEventEmitter(window, 'keydown'),
+          evt => evt.code === 'Escape'
+        )
+        this._onEscKeyDownMutable.value = onEscKeydown(this.exitWindowFullscreen, this)
+      } else {
+        this._onEscKeyDownMutable.value = undefined
+      }
+    })
     this._onQualitySwitchStart.pause()
     this._onQualitySwitchEnd.pause()
 
@@ -316,6 +332,61 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       }
     }
     return Promise.resolve()
+  }
+
+  public get windowFullscreen() {
+    const container = document.querySelector<HTMLElement>('.xpcplayer-window-fullscreen')
+    if (container && container === this.container) {
+      const style = getComputedStyle(container)
+      return style.display !== 'none' && style.visibility !== 'hidden'
+    }
+    return false
+  }
+
+  public requestWindowFullscreen() {
+    if (this.windowFullscreen) {
+      return
+    }
+    let container = document.querySelector<HTMLElement>('.xpcplayer-window-fullscreen')
+    if (!container) {
+      container = document.createElement('div')
+      container.style.left = '0'
+      container.style.top = '0'
+      container.style.right = '0'
+      container.style.bottom = '0'
+      container.style.zIndex = '99999999'
+      document.body.appendChild(container)
+    }
+
+    container.style.visibility = 'visible'
+    container.style.position = 'fixed'
+    container.classList.add('xpcplayer-window-fullscreen')
+    this._originalContainer = this.container
+    this.container = container
+    const event = new CustomEvent('windowfullscreenchange', { detail: true })
+    this._onWindowFullscreenChange.fire(event)
+  }
+
+  public toggleWindowFullscreen() {
+    if (this.windowFullscreen) {
+      this.exitWindowFullscreen()
+    } else {
+      this.requestWindowFullscreen()
+    }
+  }
+
+  public exitWindowFullscreen() {
+    if (!this.windowFullscreen) {
+      return
+    }
+    const container = this.container
+    if (container) {
+      container.style.visibility = 'hidden'
+      this.container = this._originalContainer
+      this._originalContainer = null
+      const event = new CustomEvent('windowfullscreenchange', { detail: false })
+      this._onWindowFullscreenChange.fire(event)
+    }
   }
 
   private initHTMLVideoElement() {
