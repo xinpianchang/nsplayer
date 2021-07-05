@@ -348,6 +348,9 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     if (this.windowFullscreen) {
       return
     }
+    if (this.fullscreen) {
+      this.exitFullscreen()
+    }
     let container = document.querySelector<HTMLElement>('.xpcplayer-window-fullscreen')
     if (!container) {
       container = document.createElement('div')
