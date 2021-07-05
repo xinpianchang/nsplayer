@@ -101,6 +101,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
 
   private _el: HTMLElement | null = null
   private _originalContainer: HTMLElement | null = null
+  private _originalBodyOverflow = ''
   private _disposableParentElement = new MutableDisposable()
   private _delayQualitySwitchRequest = new MutableDisposable()
   private _corePlayerRef = new MutableDisposable<ICorePlayer>()
@@ -363,6 +364,8 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     container.classList.add('xpcplayer-window-fullscreen')
     this._originalContainer = this.container
     this.container = container
+    this._originalBodyOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     const event = new CustomEvent('windowfullscreenchange', { detail: true })
     this._onWindowFullscreenChange.fire(event)
   }
@@ -379,11 +382,20 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     if (!this.windowFullscreen) {
       return
     }
+    if (this.fullscreen) {
+      this.exitFullscreen()
+    }
     const container = this.container
     if (container) {
       container.style.visibility = 'hidden'
       this.container = this._originalContainer
       this._originalContainer = null
+      if (this._originalBodyOverflow) {
+        document.body.style.overflow = this._originalBodyOverflow
+      } else {
+        document.body.style.removeProperty('overflow')
+      }
+      this._originalBodyOverflow = ''
       const event = new CustomEvent('windowfullscreenchange', { detail: false })
       this._onWindowFullscreenChange.fire(event)
     }
