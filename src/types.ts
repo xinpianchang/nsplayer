@@ -24,14 +24,10 @@ declare global {
   }
 
   interface Document {
-    pictureInPictureEnabled: boolean
-    pictureInPictureElement: HTMLVideoElement | null
-    exitPictureInPicture(): Promise<void>
+    readonly pictureInPictureElement?: HTMLVideoElement | null
   }
 
   interface HTMLVideoElement {
-    playsInline: boolean
-    readonly requestPictureInPicture?: () => Promise<void>
     // airplay
     readonly webkitShowPlaybackTargetPicker?: () => void
     readonly webkitSupportsFullscreen?: boolean
@@ -51,6 +47,7 @@ export const VideoEventNameMap = {
   onEmptied: 'emptied',
   onEnded: 'ended',
   onError: 'error',
+  onLoad: 'load',
   onLoadedData: 'loadeddata',
   onLoadedMetaData: 'loadedmetadata',
   onLoadStart: 'loadstart',

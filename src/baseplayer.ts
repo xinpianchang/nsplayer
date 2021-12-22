@@ -279,7 +279,7 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
   public requestPictureInPicture(): Promise<void> {
     const video = this.withVideo()
     if (video.requestPictureInPicture) {
-      return video.requestPictureInPicture()
+      return video.requestPictureInPicture().then()
     }
     return Promise.reject(new Error('picture in picture not supported'))
   }

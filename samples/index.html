@@ -142,12 +142,23 @@
     input.player-seeker {
       width: 100%;
     }
+    div.demo {
+      position: absolute;
+      top: 40px;
+      left: 40px;
+      padding: 3px 8px;
+      border-radius: 3px;
+      background: rgba(200, 200, 200, 0.5);
+      color: white;
+      backdrop-filter: blur(20px);
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <!-- <video autoplay controls preload="auto" src="https://api.dogecloud.com/player/get.mp4?vcode=5ac682e6f8231991&userId=17&ext=.mp4"></video> -->
   </div>
+  <div class="demo">版权声明：视频只用于 demo 演示，未经作者允许不可商用，原始视频地址来源于新片场<br>如若视频侵权，请联系 develop@xinpianchang.com</div>
   <div class="controller">
     <div class="player-name"></div>
     <hr />

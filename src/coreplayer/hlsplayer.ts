@@ -1,4 +1,4 @@
-import Hls from 'hls.js'
+import Hls, { Level } from 'hls.js'
 import {
   toDisposable,
   MutableDisposable,
@@ -10,7 +10,7 @@ import { CorePlayer, SourceWithMimeType, QualityLevel } from '.'
 
 const supportMSE = Hls.isSupported()
 
-export class HlsPlayer extends CorePlayer<Hls.Level> {
+export class HlsPlayer extends CorePlayer<Level> {
   private _hlsPlayer?: Hls
   private _nextLevel = -1
   private readonly _fastSwitchEnabled: boolean
@@ -48,7 +48,7 @@ export class HlsPlayer extends CorePlayer<Hls.Level> {
     return true
   }
 
-  protected levelToQuality(hlsLevel: Hls.Level): QualityLevel {
+  protected levelToQuality(hlsLevel: Level): QualityLevel {
     const level: { -readonly [k in keyof QualityLevel]: QualityLevel[k] } = {
       bitrate: hlsLevel.bitrate,
       width: hlsLevel.width,

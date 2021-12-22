@@ -13,9 +13,11 @@ export default function createCorePlayer(
       .then(module => module.HlsPlayer)
       .then(HlsPlayer => callback(new HlsPlayer(video, source, fastSwitch)))
   } else if (isDash(source.mime)) {
-    // return import('./coreplayer/dashplayer')
-    //   .then(module => module.DashPlayer)
-    //   .then(DashPlayer => callback(new DashPlayer(video, source, fastSwitch)))
+    if (localStorage && localStorage.getItem('use_dash_js') === 'true') {
+      return import('./coreplayer/dashplayer')
+        .then(module => module.DashPlayer)
+        .then(DashPlayer => callback(new DashPlayer(video, source, fastSwitch)))
+    }
     return import('./coreplayer/shakaplayer')
       .then(module => module.ShakaPlayer)
       .then(ShakaPlayer => callback(new ShakaPlayer(video, source, fastSwitch)))
