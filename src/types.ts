@@ -158,7 +158,8 @@ export function isMp4(mimeType: string): mimeType is MimeTypeMap['mp4'][number] 
 }
 
 export function getMimeType(src: string): MimeType | undefined {
-  const matched = src.match(/\.([^./\\]+)$/)
+  const pureSrc = src.replace(/[?#].*$/, '')
+  const matched = pureSrc.match(/\.([^./\\]+)$/)
   if (matched) {
     const extension = matched[1].toLowerCase()
     if (extension in MimeTypeMap) {

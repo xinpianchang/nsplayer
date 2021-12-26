@@ -5,7 +5,6 @@
         "esmodules": true
       },
       "bugfixes": true,
-      "loose": true,
       "modules": false
     }],
     "@babel/typescript"

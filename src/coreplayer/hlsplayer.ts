@@ -8,7 +8,7 @@ import {
 } from '@newstudios/common'
 import { CorePlayer, SourceWithMimeType, QualityLevel } from '.'
 
-const supportMSE = Hls.isSupported()
+const supportMSE = typeof window === undefined ? false : Hls.isSupported()
 
 export class HlsPlayer extends CorePlayer<Level> {
   private _hlsPlayer?: Hls
@@ -122,8 +122,8 @@ export class HlsPlayer extends CorePlayer<Level> {
       onLevelSwitching(this.updateNextQualityLevel, this, disposables)
       onLevelSwitched(this.updateQualityLevel, this, disposables)
 
-      hlsPlayer.attachMedia(video)
       hlsPlayer.loadSource(source.src)
+      hlsPlayer.attachMedia(video)
 
       this._register(disposables)
     } else {
