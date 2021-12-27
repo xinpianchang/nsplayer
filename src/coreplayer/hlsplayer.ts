@@ -8,7 +8,7 @@ import {
 } from '@newstudios/common'
 import { CorePlayer, SourceWithMimeType, QualityLevel } from '.'
 
-const supportMSE = typeof window === undefined ? false : Hls.isSupported()
+const supportMSE = typeof window === 'undefined' ? false : Hls.isSupported()
 
 export class HlsPlayer extends CorePlayer<Level> {
   private _hlsPlayer?: Hls
