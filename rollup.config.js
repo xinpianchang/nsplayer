@@ -48,7 +48,7 @@ const cjs = {
     dir: 'dist/cjs',
     format: 'cjs',
     indent: false,
-    intro: 'var global = typeof self !== undefined ? self : this;',
+    intro: "var global = typeof self !== 'undefined' ? self : globalThis;",
     exports: 'default',
   },
   external: makeExternalPredicate([
@@ -73,7 +73,7 @@ const ejs = {
     dir: 'dist/esm',
     format: 'esm',
     indent: false,
-    intro: 'var global = typeof self !== undefined ? self : this;',
+    intro: "var global = typeof self !== 'undefined' ? self : globalThis;",
   },
   external: makeExternalPredicate([
     ...Object.keys(pkg.dependencies || {}),
@@ -99,7 +99,7 @@ const mjs = {
     indent: false,
     entryFileNames: '[name].mjs',
     chunkFileNames: '[name]-[hash].mjs',
-    intro: 'var global = typeof self !== undefined ? self : this;',
+    intro: "var global = typeof self !== 'undefined' ? self : globalThis;",
   },
   plugins: [
     ...plugins,
