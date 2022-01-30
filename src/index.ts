@@ -575,6 +575,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   }
 
   public requestCapLevelToPlayerSize(capToPlayer: boolean): void {
+    this._capLevelToPlayerSize = capToPlayer
     this.corePlayer?.setCapLevelToPlayerSize(capToPlayer)
   }
 

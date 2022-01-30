@@ -196,6 +196,8 @@
       <button class="player-switch-container">更换 Container</button>
       <input id="fseek" type="checkbox" class="player-fastseek" checked />
       <label for="fseek">FastSeek</label>
+      <input id="capsize" type="checkbox" class="player-capsize" />
+      <label for="capsize">CapToSize</label>
     </div>
     <div class="btn-list">
       <!-- <button class="player-switch-source">更换 Mp4 2</button>
@@ -357,6 +359,7 @@
       autoplay: false,
       controls: true,
       abrFastSwitch: true,
+      capLevelToPlayerSize: false,
     })
 
     player.playsInline = true
@@ -515,6 +518,11 @@
     }
 
     const fastSeekChecked = $('input.player-fastseek')
+    const capSizeChecked = $('input.player-capsize')
+
+    capSizeChecked.onchange = e => {
+      player.requestCapLevelToPlayerSize(e.target.checked)
+    }
 
     $('.player-seeker').oninput = e => {
       if (player.duration) {
