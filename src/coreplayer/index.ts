@@ -200,6 +200,8 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
   public abstract get supportAutoQuality(): boolean
   public abstract get bandwidthEstimate(): number
   public abstract setInitialBitrate(bitrate: number): void
+  public abstract get capLevelToPlayerSize(): boolean
+  public abstract setCapLevelToPlayerSize(capLevelToPlayer: boolean): void
 
   protected abstract get levels(): Level[]
   protected abstract get currentLevel(): Level | undefined
