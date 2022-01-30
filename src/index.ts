@@ -44,6 +44,7 @@ export interface NSPlayerOptions {
   volume?: number
   controls?: boolean
   abrFastSwitch?: boolean
+  capLevelToPlayerSize?: boolean
 }
 
 export interface IPlayer extends BasePlayer {
@@ -73,6 +74,9 @@ export interface IPlayer extends BasePlayer {
 
   /** 根据 PlayList 数组的下标请求播放质量，-1 则表示自动 */
   requestQualityByIndex(index: number): void
+
+  /** 对当前 corePlayer 请求 cap to player */
+  requestCapLevelToPlayerSize(capToPlayer: boolean): void
 
   readonly onFullscreenChange: Event<globalThis.Event>
   readonly onFullscreenError: Event<globalThis.Event>
@@ -107,6 +111,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   private _corePlayerRef = new MutableDisposable<ICorePlayer>()
   private _sources: Source[] = []
   private _requestedQualityId = 'auto'
+  private _capLevelToPlayerSize = false
   private _sourcePolicy = DefaultSourcePolicy
   private _abrFastSwitch = true
   private _containerTimer = 0
@@ -280,6 +285,10 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
 
       if (opt.abrFastSwitch === false) {
         this._abrFastSwitch = false
+      }
+
+      if (opt.capLevelToPlayerSize === true) {
+        this._capLevelToPlayerSize = true
       }
 
       if (opt.playbackRate) {
@@ -565,6 +574,10 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     }
   }
 
+  public requestCapLevelToPlayerSize(capToPlayer: boolean): void {
+    this.corePlayer?.setCapLevelToPlayerSize(capToPlayer)
+  }
+
   public getSource(): readonly Source[] {
     return this._sources.slice()
   }
@@ -596,7 +609,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       const mime = source.mime ?? getMimeType(source.src)
       if (mime) {
         const video = this.withVideo()
-        createCorePlayer(source, video, sources, this._abrFastSwitch)
+        createCorePlayer(source, video, sources, this._abrFastSwitch, this._capLevelToPlayerSize)
           .then(corePlayer => {
             if (counterId !== this._corePlayerCreateCounter) {
               // another core player created

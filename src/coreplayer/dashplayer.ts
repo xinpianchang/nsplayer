@@ -92,7 +92,12 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
   private _dashPlayer: MediaPlayerClass
   private _currentLevelIndex = 0
 
-  constructor(video: HTMLVideoElement, source: SourceWithMimeType, fastSwitch = true) {
+  constructor(
+    video: HTMLVideoElement,
+    source: SourceWithMimeType,
+    fastSwitch = true,
+    capLevelToPlayerSize = false
+  ) {
     super(video, source)
     this._fastSwitchEnabled = fastSwitch
     this._dashPlayer = DashPlayer._mediaPlayerFactory.create()
@@ -100,6 +105,9 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
       streaming: {
         buffer: {
           fastSwitchEnabled: this._fastSwitchEnabled,
+        },
+        abr: {
+          usePixelRatioInLimitBitrateByPortal: capLevelToPlayerSize,
         },
       },
     })
@@ -241,6 +249,23 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
         },
       },
     })
+  }
+
+  public setCapLevelToPlayerSize(capLevelToPlayerSize: boolean) {
+    const dashPlayer = this._dashPlayer
+    dashPlayer.updateSettings({
+      streaming: {
+        abr: {
+          usePixelRatioInLimitBitrateByPortal: capLevelToPlayerSize,
+        },
+      },
+    })
+  }
+
+  public get capLevelToPlayerSize(): boolean {
+    return (
+      this._dashPlayer.getSettings().streaming?.abr?.usePixelRatioInLimitBitrateByPortal ?? false
+    )
   }
 
   public get bandwidthEstimate(): number {

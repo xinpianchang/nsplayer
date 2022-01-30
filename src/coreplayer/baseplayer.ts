@@ -166,6 +166,14 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
     this._startLevelIndex = index
   }
 
+  public setCapLevelToPlayerSize(_capLevelToPlayerSize: boolean) {
+    // Do Not Support
+  }
+
+  public get capLevelToPlayerSize(): boolean {
+    return false
+  }
+
   public get bandwidthEstimate(): number {
     return NaN
   }

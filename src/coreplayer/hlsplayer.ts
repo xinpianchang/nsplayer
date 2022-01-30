@@ -16,12 +16,18 @@ export class HlsPlayer extends CorePlayer<Level> {
   private readonly _fastSwitchEnabled: boolean
   private _readyDisposable = this._register(new MutableDisposable())
 
-  constructor(video: HTMLVideoElement, source: SourceWithMimeType, fastSwitch = true) {
+  constructor(
+    video: HTMLVideoElement,
+    source: SourceWithMimeType,
+    fastSwitch = true,
+    capLevelToPlayerSize = false
+  ) {
     super(video, source)
     this._fastSwitchEnabled = fastSwitch
     if (supportMSE) {
       const hlsPlayer = new Hls({
         autoStartLoad: false,
+        capLevelToPlayerSize,
       })
       this._hlsPlayer = hlsPlayer
       this._register(toDisposable(() => hlsPlayer.destroy()))
@@ -158,6 +164,16 @@ export class HlsPlayer extends CorePlayer<Level> {
     } else {
       this._readyDisposable.value = this.onReady(() => this.setInitialBitrate(bitrate))
     }
+  }
+
+  public setCapLevelToPlayerSize(capLevelToPlayerSize: boolean) {
+    if (this._hlsPlayer) {
+      this._hlsPlayer.capLevelToPlayerSize = capLevelToPlayerSize
+    }
+  }
+
+  public get capLevelToPlayerSize(): boolean {
+    return this._hlsPlayer?.capLevelToPlayerSize ?? false
   }
 
   public get bandwidthEstimate(): number {

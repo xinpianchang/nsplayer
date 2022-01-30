@@ -6,21 +6,26 @@ export default function createCorePlayer(
   video: HTMLVideoElement,
   sources: Source[] = [],
   fastSwitch = true,
+  capLevelToPlayerSize = false,
   callback: (corePlayer: ICorePlayer) => ICorePlayer | Promise<ICorePlayer> = id => id
 ): Promise<ICorePlayer> {
   if (isHls(source.mime)) {
     return import('./coreplayer/hlsplayer')
       .then(module => module.HlsPlayer)
-      .then(HlsPlayer => callback(new HlsPlayer(video, source, fastSwitch)))
+      .then(HlsPlayer => callback(new HlsPlayer(video, source, fastSwitch, capLevelToPlayerSize)))
   } else if (isDash(source.mime)) {
     if (localStorage && localStorage.getItem('use_dash_js') === 'true') {
       return import('./coreplayer/dashplayer')
         .then(module => module.DashPlayer)
-        .then(DashPlayer => callback(new DashPlayer(video, source, fastSwitch)))
+        .then(DashPlayer =>
+          callback(new DashPlayer(video, source, fastSwitch, capLevelToPlayerSize))
+        )
     }
     return import('./coreplayer/shakaplayer')
       .then(module => module.ShakaPlayer)
-      .then(ShakaPlayer => callback(new ShakaPlayer(video, source, fastSwitch)))
+      .then(ShakaPlayer =>
+        callback(new ShakaPlayer(video, source, fastSwitch, capLevelToPlayerSize))
+      )
   } else if (isMp4(source.mime)) {
     if (sources) {
       return import('./coreplayer/baseplayer')

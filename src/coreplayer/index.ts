@@ -68,11 +68,17 @@ export interface ICorePlayer extends IDisposable {
   /** 获取估算的带宽 */
   readonly bandwidthEstimate: number
 
+  /** 获取是否 cap to player */
+  readonly capLevelToPlayerSize: boolean
+
   /** 根据质量ID设定播放质量，ID 为 auto 表示自动切换 */
   setQualityById(id: string): void
 
   /** 初始的播放比特率 */
   setInitialBitrate(bitrate: number): void
+
+  /** 设置 cap to player */
+  setCapLevelToPlayerSize(capLevelToPlayer: boolean): void
 
   /** 如何 retry */
   // retry(): void

@@ -28,12 +28,19 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
   private _videoSizeObserverTimer = this._register(new IntervalTimer())
   private _videoWidth = 0
   private _videoHeight = 0
+  private _maxWidth = 1e5
+  private _maxHeight = 1e5
   private _bufferMutable = this._register(new MutableDisposable())
 
   protected readonly _onVideoLevelSwitched = this._register(new Emitter<void>())
   public readonly onVideoLevelSwitched = this._onVideoLevelSwitched.event
 
-  constructor(video: HTMLVideoElement, source: SourceWithMimeType, private _fastSwitch: boolean) {
+  constructor(
+    video: HTMLVideoElement,
+    source: SourceWithMimeType,
+    private _fastSwitch = true,
+    private _capLevelToPlayerSize = false
+  ) {
     super(video, source)
 
     const player = new shaka.Player()
@@ -65,7 +72,35 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
       if (changed) {
         this._onVideoLevelSwitched.fire()
       }
-    }, 500)
+
+      // capLevelToPlayerSize
+      const maxWidth = this._capLevelToPlayerSize
+        ? this.video.clientWidth * this.devicePixelRatio
+        : 1e5
+      const maxHeight = this._capLevelToPlayerSize
+        ? this.video.clientHeight * this.devicePixelRatio
+        : 1e5
+
+      if (maxWidth !== this._maxWidth) {
+        this._maxWidth = maxWidth
+        this._shakaPlayer.configure('abr.restrictions.maxWidth', maxWidth)
+      }
+      if (maxHeight !== this._maxHeight) {
+        this._maxHeight = maxHeight
+        this._shakaPlayer.configure('abr.restrictions.maxHeight', maxHeight)
+      }
+    }, 1000)
+  }
+
+  private get devicePixelRatio() {
+    const w = window as any as Record<string, number>
+    return (
+      w.devicePixelRatio ||
+      w.mozDevicePixelRatio ||
+      w.webkitDevicePixelRatio ||
+      w.msDevicePixelRatio ||
+      1
+    )
   }
 
   private stopObserveVideoSize() {
@@ -87,6 +122,14 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
 
   public setInitialBitrate(bitrate: number): void {
     this._shakaPlayer.configure('abr.defaultBandwidthEstimate', bitrate)
+  }
+
+  public setCapLevelToPlayerSize(capLevelToPlayerSize: boolean) {
+    this._capLevelToPlayerSize = capLevelToPlayerSize
+  }
+
+  public get capLevelToPlayerSize(): boolean {
+    return this._capLevelToPlayerSize
   }
 
   protected get levels(): shaka.extern.Track[] {
