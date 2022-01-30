@@ -30,6 +30,7 @@
       flex: 0 0 400px;
       background: #111111;
       padding: 10px;
+      overflow-y: auto;
     }
     div.controller .container2 {
       position: relative;
@@ -353,10 +354,13 @@
       selector: 'div.container',
       source: defaultSource.source,
       initialBitrate: defaultSource.initialBitrate,
-      autoplay: true,
+      autoplay: false,
       controls: true,
       abrFastSwitch: true,
     })
+
+    player.playsInline = true
+    player.autoplay = false
 
     function qualityIdToText(qualityId) {
       if (qualityId === 'auto') {

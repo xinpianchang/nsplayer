@@ -167,6 +167,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       merge: levels => levels[levels.length - 1],
     })
   )
+
   public readonly onQualitySwitchEnd = Event.filter(
     this._onQualitySwitchEnd.event,
     qualityLevel => {
@@ -490,18 +491,15 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   }
 
   private _updateQualityId() {
-    const corePlayer = this.corePlayer
-    if (corePlayer) {
-      corePlayer.setQualityById(this._requestedQualityId)
-    }
+    this.corePlayer?.setQualityById(this._requestedQualityId)
   }
 
   public get src() {
-    return this.video ? this.video.src : ''
+    return this.video?.src || ''
   }
 
   public get srcObject() {
-    return this.video ? this.video.srcObject : null
+    return this.video?.srcObject || null
   }
 
   public get currentQualityId(): string {

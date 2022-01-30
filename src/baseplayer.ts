@@ -27,7 +27,7 @@ export interface IBasePlayer extends IDisposable {
   toggle(): void
 
   togglePictureInPicture(): void
-  requestPictureInPicture(): Promise<void>
+  requestPictureInPicture(): Promise<PictureInPictureWindow>
   exitPictureInPicture(): Promise<void>
   readonly supportPictureInPicture: boolean
   readonly pictureInPicture: boolean
@@ -276,10 +276,10 @@ export abstract class BasePlayer extends Disposable implements IBasePlayer {
     return !!this.video && this.video === document.pictureInPictureElement
   }
 
-  public requestPictureInPicture(): Promise<void> {
+  public requestPictureInPicture(): Promise<PictureInPictureWindow> {
     const video = this.withVideo()
     if (video.requestPictureInPicture) {
-      return video.requestPictureInPicture().then()
+      return video.requestPictureInPicture()
     }
     return Promise.reject(new Error('picture in picture not supported'))
   }
