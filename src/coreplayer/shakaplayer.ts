@@ -59,37 +59,39 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
   }
 
   private startObserveVideoSize() {
-    this._videoSizeObserverTimer.cancelAndSet(() => {
-      let changed = false
-      if (this._videoWidth !== this.video.videoWidth) {
-        this._videoWidth = this.video.videoWidth
-        changed = true
-      }
-      if (this._videoHeight !== this.video.videoHeight) {
-        this._videoHeight = this.video.videoHeight
-        changed = true
-      }
-      if (changed) {
-        this._onVideoLevelSwitched.fire()
-      }
+    this._videoSizeObserverTimer.cancelAndSet(this.videoSizeHandler, 1000)
+  }
 
-      // capLevelToPlayerSize
-      const maxWidth = this._capLevelToPlayerSize
-        ? this.video.clientWidth * this.devicePixelRatio
-        : 1e5
-      const maxHeight = this._capLevelToPlayerSize
-        ? this.video.clientHeight * this.devicePixelRatio
-        : 1e5
+  private videoSizeHandler = () => {
+    let changed = false
+    if (this._videoWidth !== this.video.videoWidth) {
+      this._videoWidth = this.video.videoWidth
+      changed = true
+    }
+    if (this._videoHeight !== this.video.videoHeight) {
+      this._videoHeight = this.video.videoHeight
+      changed = true
+    }
+    if (changed && !isNaN(this._videoWidth) && !isNaN(this._videoHeight)) {
+      this._onVideoLevelSwitched.fire()
+    }
 
-      if (maxWidth !== this._maxWidth) {
-        this._maxWidth = maxWidth
-        this._shakaPlayer.configure('abr.restrictions.maxWidth', maxWidth)
-      }
-      if (maxHeight !== this._maxHeight) {
-        this._maxHeight = maxHeight
-        this._shakaPlayer.configure('abr.restrictions.maxHeight', maxHeight)
-      }
-    }, 1000)
+    // capLevelToPlayerSize
+    const maxWidth = this._capLevelToPlayerSize
+      ? this.video.clientWidth * this.devicePixelRatio
+      : 1e5
+    const maxHeight = this._capLevelToPlayerSize
+      ? this.video.clientHeight * this.devicePixelRatio
+      : 1e5
+
+    if (maxWidth !== this._maxWidth && !isNaN(maxWidth)) {
+      this._maxWidth = maxWidth
+      this._shakaPlayer.configure('abr.restrictions.maxWidth', maxWidth)
+    }
+    if (maxHeight !== this._maxHeight && !isNaN(maxHeight)) {
+      this._maxHeight = maxHeight
+      this._shakaPlayer.configure('abr.restrictions.maxHeight', maxHeight)
+    }
   }
 
   private get devicePixelRatio() {

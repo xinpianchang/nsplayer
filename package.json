@@ -92,14 +92,14 @@
     "rollup-plugin-serve": "^1.1.0",
     "rollup-plugin-terser": "^7.0.2",
     "ts-node": "^9.1.1",
-    "typescript": "^4.5.4"
+    "typescript": "^4.5.5"
   },
   "dependencies": {
     "@babel/runtime": "^7.16.5",
-    "dashjs": "^4.2.0",
+    "dashjs": "^4.2.1",
     "delegates": "^1.0.0",
-    "hls.js": "^1.1.2",
-    "shaka-player": "^3.2.1"
+    "hls.js": "^1.1.4",
+    "shaka-player": "^3.3.1"
   },
   "npmName": "nsplayer",
   "peerDependencies": {
