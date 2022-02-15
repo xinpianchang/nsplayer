@@ -624,6 +624,10 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
               corePlayer.setInitialBitrate(this.defaultInitialBitrate)
             }
 
+            if (corePlayer.capLevelToPlayerSize !== this._capLevelToPlayerSize) {
+              corePlayer.setCapLevelToPlayerSize(this._capLevelToPlayerSize)
+            }
+
             if (!isAutoQuality(this._requestedQualityId)) {
               corePlayer.setQualityById(this._requestedQualityId)
             } else if (!corePlayer.supportAutoQuality) {
