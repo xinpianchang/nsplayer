@@ -1,4 +1,4 @@
-import { Source, isHls, getMimeType, isDash, isMp4, isSafari } from '../types'
+import { Source, isHls, getMimeType, isDash, isMp4, isSafari, isMobile } from '../types'
 import { SourceWithMimeType } from '../coreplayer'
 
 export type SourcePolicy = (sources: Source[]) => SourceWithMimeType | undefined
@@ -58,7 +58,10 @@ export const DefaultSourcePolicy: SourcePolicy = sources => {
   sourceMap.hls.sort(DefaultSorter)
   sourceMap.mp4.sort(DefaultSorter)
 
-  if (isSafari() && sourceMap.hls.length) {
+  /**
+   * Workaround because android dose not support dash well
+   */
+  if ((isSafari() || isMobile()) && sourceMap.hls.length) {
     return sourceMap.hls[0]
   }
 

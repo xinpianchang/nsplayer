@@ -98,8 +98,8 @@
     "@babel/runtime": "^7.16.5",
     "dashjs": "^4.2.1",
     "delegates": "^1.0.0",
-    "hls.js": "^1.1.4",
-    "shaka-player": "^3.3.1"
+    "hls.js": "^1.1.5",
+    "shaka-player": "^3.3.2"
   },
   "npmName": "nsplayer",
   "peerDependencies": {
