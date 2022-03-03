@@ -499,8 +499,41 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     }
   }
 
-  private _updateQualityId() {
-    this.corePlayer?.setQualityById(this._requestedQualityId)
+  private _updateQualityId(id: string) {
+    const corePlayer = this.corePlayer
+    if (corePlayer) {
+      const disposableStore = new DisposableStore()
+
+      corePlayer.onQualitySwitching(
+        this._onQualitySwitchStart.fire,
+        this._onQualitySwitchStart,
+        disposableStore
+      )
+
+      corePlayer.onQualityChange(
+        this._onQualitySwitchEnd.fire,
+        this._onQualitySwitchEnd,
+        disposableStore
+      )
+
+      this._delayQualitySwitchRequest.value = disposableStore
+
+      const index = this.onSelectQualityIndex(corePlayer, id)
+      const selectedId = index >= 0 ? qualityLevelToId(corePlayer.playList[index]) : id
+      corePlayer.setQualityById(selectedId)
+
+      if (corePlayer.ready) {
+        this._onQualityRequest.fire(selectedId)
+      }
+    }
+  }
+
+  /**
+   * 当请求选择 quality 时触发
+   * @param id quality id 字符串
+   */
+  protected onSelectQualityIndex(corePlayer: ICorePlayer, id: string): number {
+    return corePlayer.playList.findIndex(level => qualityLevelToId(level) === id)
   }
 
   public get src() {
@@ -539,27 +572,8 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     const oldQualityId = this._requestedQualityId
     if (oldQualityId !== id) {
       this._requestedQualityId = id
-      const corePlayer = this.corePlayer
-      if (corePlayer) {
-        const disposableStore = new DisposableStore()
-
-        corePlayer.onQualitySwitching(
-          this._onQualitySwitchStart.fire,
-          this._onQualitySwitchStart,
-          disposableStore
-        )
-
-        corePlayer.onQualityChange(
-          this._onQualitySwitchEnd.fire,
-          this._onQualitySwitchEnd,
-          disposableStore
-        )
-
-        this._delayQualitySwitchRequest.value = disposableStore
-      }
       // must call finally
-      this._updateQualityId()
-      this._onQualityRequest.fire(id)
+      this._updateQualityId(id)
     }
   }
 

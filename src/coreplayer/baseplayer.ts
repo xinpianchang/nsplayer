@@ -138,7 +138,6 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
 
       // must init the current level
       this._currentLevelIndex = this._nextLevelIndex
-      this.updateQualityLevel()
       this.updatePlayList()
       this.setReady()
       this._register(disposables)
