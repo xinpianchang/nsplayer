@@ -109,8 +109,7 @@ const mjs = {
       include: ['src/**/*'],
       babelHelpers: 'runtime',
     }),
-    terser(),
-    ...(process.env.NODE_ENV === 'development' ? [serve()] : []),
+    ...(process.env.NODE_ENV === 'development' ? [serve()] : [terser()]),
   ],
 }
 

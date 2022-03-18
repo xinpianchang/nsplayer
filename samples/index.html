@@ -159,7 +159,7 @@
   <div class="container">
     <!-- <video autoplay controls preload="auto" src="https://api.dogecloud.com/player/get.mp4?vcode=5ac682e6f8231991&userId=17&ext=.mp4"></video> -->
   </div>
-  <div class="demo">版权声明：视频只用于 demo 演示，未经作者允许不可商用，原始视频地址来源于新片场<br>如若视频侵权，请联系 develop@xinpianchang.com</div>
+  <div class="demo">版权声明：视频只用于 demo 演示，未经作者允许不可商用，原始<a href="https://www.xinpianchang.com/a10926689" target="_blank" rel="noreferer">视频地址</a>来源于新片场<br>如若视频侵权，请联系 develop@xinpianchang.com</div>
   <div class="controller">
     <div class="player-name"></div>
     <hr />
@@ -222,6 +222,8 @@
   <script type="module">
     import NSPlayer from '../dist/mjs/index.mjs'
     const { qualityLevelToId, idToQualityLevel } = NSPlayer
+
+    // NSPlayer.debug = true
 
     const mp4s = [
       {
@@ -329,11 +331,11 @@
     ]
 
     const hls = [
-      { src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/8f431d7b-8709-4877-b751-4911b2b01d39/index.m3u8' },
+      { src: 'https://ks-xpc4.xpccdn.com/f7a3d0f2-8fed-4c50-8046-5d7ed103115c/index.m3u8' },
     ]
 
     const dash = [
-      { src: 'https://ks3-cn-beijing.ksyun.com/xpc-test/8f431d7b-8709-4877-b751-4911b2b01d39/index.mpd', mime: 'application/dash+xml' }
+      { src: 'https://ks-xpc4.xpccdn.com/f7a3d0f2-8fed-4c50-8046-5d7ed103115c/index.mpd', mime: 'application/dash+xml' }
     ]
 
     const dash2 = [
@@ -349,8 +351,11 @@
       initialBitrate: 3000000,
     }
 
-    const $ = document.querySelector.bind(document)
-    const $$ = document.querySelectorAll.bind(document)
+    const $ = selectors => document.querySelector(selectors)
+    const $$ = selectors => document.querySelectorAll(selectors)
+
+    const fastSeekChecked = $('input.player-fastseek')
+    const capSizeChecked = $('input.player-capsize')
 
     window.player = new NSPlayer({
       selector: 'div.container',
@@ -359,11 +364,12 @@
       autoplay: false,
       controls: true,
       abrFastSwitch: true,
-      capLevelToPlayerSize: false,
+      capLevelToPlayerSize: initCapToPlayerSize(),
     })
 
     player.playsInline = true
-    player.autoplay = false
+    player.autoplay = true
+    initQuality()
 
     function qualityIdToText(qualityId) {
       if (qualityId === 'auto') {
@@ -389,8 +395,31 @@
       toastDiv.remove()
     }
 
+    function setQualityId(id) {
+      player.requestQualityById(id)
+      localStorage.setItem('quality', id)
+    }
+
+    function setCapToPlayerSize(cap) {
+      player.requestCapLevelToPlayerSize(cap)
+      localStorage.setItem('capToPlayerSize', JSON.stringify(cap))
+      console.log('cap:', cap)
+    }
+
+    function initQuality() {
+      const id = localStorage.getItem('quality')
+      id && player.requestQualityById(id)
+    }
+
+    function initCapToPlayerSize() {
+      const cap = JSON.parse(localStorage.getItem('capToPlayerSize') || 'false')
+      capSizeChecked.checked = cap
+      return cap
+    }
+
     function updatePlayList() {
       const playList = player.currentPlayList
+      console.log('[playlist] ready', playList.length)
       $('.player-name').innerText = 'Base: v' + player.version + ' - ' + player.currentPlayerName
       $('.player-list').innerHTML = ''
 
@@ -400,7 +429,7 @@
         item.innerText = 'auto'
         item.setAttribute('id', 'auto')
         $('.player-list').appendChild(item)
-        item.onclick = () => player.requestQualityById('auto')
+        item.onclick = () => setQualityId('auto')
       }
 
       playList.forEach(level => {
@@ -409,19 +438,24 @@
         item.innerText = `${level.bitrate / 1000} kbps ${level.width}x${level.height}`
         const qualityId = qualityLevelToId(level)
         item.setAttribute('id', qualityId)
-        item.onclick = () => player.requestQualityById(qualityId)
+        item.onclick = () => setQualityId(qualityId)
         $('.player-list').appendChild(item)
       })
 
-      $(`#${player.requestedQualityId}`).classList.add('selected')
+      $$('.player-list > div').forEach((item, i) => {
+        console.log(`[playlist ${i}]:`, item.id)
+      })
+
+      $(`#${player.selectedQualityId}`).classList.add('selected')
       $('.player-play').onclick = () => player.toggle()
       $('.player-fullscreen').onclick = () => player.toggleFullscreen({ fallback: 'native' })
       $('.player-window-fullscreen').onclick = () => player.toggleWindowFullscreen()
+      console.log('[playlist] done')
     }
 
-    function requestQuality() {
-      const qualityId = player.requestedQualityId
-      $$('.quality-level').forEach(item => item.classList.remove('selected'))
+    function selectQuality() {
+      const qualityId = player.selectedQualityId
+      $$('.quality-level.selected').forEach(item => item.classList.remove('selected'))
       if (qualityId !== 'auto') {
         $(`#${qualityId}`).classList.add('selected')
       } else {
@@ -486,7 +520,7 @@
     player.onVideoAttach(attachVideo)
     player.onVideoDetach(detachVideo)
     player.onPlayListChange(updatePlayList)
-    player.onQualityRequest(requestQuality)
+    player.onQualitySelect(selectQuality)
     player.onQualitySwitchStart(startSwitch)
     player.onQualitySwitchEnd(endSwitch)
     player.onQualityChange(updateQuality)
@@ -517,11 +551,8 @@
       }
     }
 
-    const fastSeekChecked = $('input.player-fastseek')
-    const capSizeChecked = $('input.player-capsize')
-
     capSizeChecked.onchange = e => {
-      player.requestCapLevelToPlayerSize(e.target.checked)
+      setCapToPlayerSize(e.target.checked)
     }
 
     $('.player-seeker').oninput = e => {
@@ -570,7 +601,10 @@
     }
 
     function updatePlayback() {
-      $('.player-rate span.selected')?.classList.remove('selected')
+      const selected = $('.player-rate span.selected')
+      if (selected) {
+        selected.classList.remove('selected')
+      }
       const playbackRate = player.playbackRate
       let i = 2
       if (playbackRate < 1) {
@@ -657,6 +691,7 @@
         player.stop()
       } else {
         player.setSource(defaultSource.source, defaultSource.initialBitrate)
+        initQuality()
       }
       updatePlayback()
     }
@@ -671,21 +706,25 @@
 
     $('button.player-switch-source').onclick = () => {
       player.setSource(mp4s, 3000000)
+      initQuality()
       updatePlayback()
     }
 
     $('button.player-switch-hls').onclick = () => {
       player.setSource(hls, 3000000)
+      initQuality()
       updatePlayback()
     }
 
     $('button.player-switch-dash').onclick = () => {
       player.setSource(dash, 3000000)
+      initQuality()
       updatePlayback()
     }
 
     $('button.player-switch-dash2').onclick = () => {
       player.setSource(dash2, 3000000)
+      initQuality()
       updatePlayback()
     }
 

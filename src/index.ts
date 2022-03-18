@@ -61,12 +61,14 @@ export interface IPlayer extends BasePlayer {
   readonly viewport: Size
   readonly bandwidthEstimate: number
   readonly version: string
+
   container: HTMLElement | null
   sourcePolicy: SourcePolicy
 
   /** 提供所有可供播放的资源，请尽量提供 mime type 以及 src */
   setSource(sources: Source | Source[], initialBitrate?: number): boolean
 
+  /** 是否含有播放源 */
   hasSource(): boolean
 
   /** 根据 id 请求播放质量，auto 表示自动，id 在各类核心播放器之间通用 */
@@ -88,6 +90,7 @@ export interface IPlayer extends BasePlayer {
   readonly onPlayListChange: Event<PlayList>
   readonly onAutoChange: Event<boolean>
   readonly onQualityRequest: Event<string>
+  readonly onQualitySelect: Event<string>
   readonly onReset: Event<globalThis.Event>
 }
 
@@ -102,6 +105,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   public static readonly isSameLevel = isSameLevel
   public static readonly formatTime = formatTime
   public static readonly getMimeType = getMimeType
+  public static debug = false
 
   private _el: HTMLElement | null = null
   private _originalContainer: HTMLElement | null = null
@@ -145,6 +149,9 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   protected readonly _onQualityRequest = this._register(new Emitter<string>())
   public readonly onQualityRequest = this._onQualityRequest.event
 
+  protected readonly _onQualitySelect = this._register(new Relay<string>())
+  public readonly onQualitySelect = this._onQualitySelect.event
+
   protected readonly _onLoad = this._register(new Emitter<globalThis.Event>())
   public readonly onLoad = this._onLoad.event
 
@@ -176,7 +183,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   public readonly onQualitySwitchEnd = Event.filter(
     this._onQualitySwitchEnd.event,
     qualityLevel => {
-      const requestedQualityLevel = idToQualityLevel(this.requestedQualityId)
+      const requestedQualityLevel = idToQualityLevel(this.selectedQualityId)
       return isSameLevel(qualityLevel, requestedQualityLevel)
     }
   )
@@ -499,10 +506,13 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     }
   }
 
-  private _updateQualityId(id: string) {
+  /** update the quality to requested, reenter-safe */
+  private _updateQuality() {
+    const id = this._requestedQualityId
     const corePlayer = this.corePlayer
     if (corePlayer) {
       const disposableStore = new DisposableStore()
+      this._delayQualitySwitchRequest.value = disposableStore
 
       corePlayer.onQualitySwitching(
         this._onQualitySwitchStart.fire,
@@ -516,25 +526,17 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
         disposableStore
       )
 
-      this._delayQualitySwitchRequest.value = disposableStore
-
-      const index = this.onSelectQualityIndex(corePlayer, id)
-      const selectedId = index >= 0 ? qualityLevelToId(corePlayer.playList[index]) : id
-      corePlayer.setQualityById(selectedId)
-
-      if (corePlayer.ready) {
-        this._onQualityRequest.fire(selectedId)
-      }
+      corePlayer.setQualityById(id)
     }
   }
 
-  /**
-   * 当请求选择 quality 时触发
-   * @param id quality id 字符串
-   */
-  protected onSelectQualityIndex(corePlayer: ICorePlayer, id: string): number {
-    return corePlayer.playList.findIndex(level => qualityLevelToId(level) === id)
-  }
+  // /**
+  //  * 当请求选择 quality 时触发
+  //  * @param id quality id 字符串
+  //  */
+  // protected onSelectQualityIndex(corePlayer: ICorePlayer, id: string): number {
+  //   return corePlayer.playList.findIndex(level => qualityLevelToId(level) === id)
+  // }
 
   public get src() {
     return this.video?.src || ''
@@ -545,7 +547,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   }
 
   public get currentQualityId(): string {
-    return this.corePlayer?.qualityId || this._requestedQualityId
+    return this.corePlayer?.qualityId || 'auto'
   }
 
   public get currentPlayList(): PlayList {
@@ -556,12 +558,16 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     return this._requestedQualityId
   }
 
+  public get selectedQualityId(): string {
+    return this.corePlayer?.selectedQualityId ?? 'auto'
+  }
+
   public get autoQuality(): boolean {
     const autoQuality = this.corePlayer?.autoQuality
     if (typeof autoQuality === 'boolean') {
       return autoQuality
     }
-    return this._requestedQualityId === 'auto'
+    return this.selectedQualityId === 'auto'
   }
 
   public get supportAutoQuality() {
@@ -572,13 +578,14 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     const oldQualityId = this._requestedQualityId
     if (oldQualityId !== id) {
       this._requestedQualityId = id
+      this._onQualityRequest.fire(id)
       // must call finally
-      this._updateQualityId(id)
+      this._updateQuality()
     }
   }
 
   public requestQualityByIndex(index: number): void {
-    if (index === -1) {
+    if (index < 0) {
       this.requestQualityById('auto')
     } else if (index < this.currentPlayList.length) {
       const qualityLevel = this.currentPlayList[index]
@@ -632,6 +639,10 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
               return
             }
 
+            Object.defineProperty(corePlayer, 'debug', {
+              get: () => NSPlayer.debug,
+            })
+
             if (initialBitrate) {
               corePlayer.setInitialBitrate(initialBitrate)
             } else if (this.defaultInitialBitrate) {
@@ -642,19 +653,16 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
               corePlayer.setCapLevelToPlayerSize(this._capLevelToPlayerSize)
             }
 
-            if (!isAutoQuality(this._requestedQualityId)) {
-              corePlayer.setQualityById(this._requestedQualityId)
-            } else if (!corePlayer.supportAutoQuality) {
-              // sync with core player qualityId
-              Event.once(corePlayer.onPlayListChange)(() => {
-                this._requestedQualityId = corePlayer.qualityId
-              })
-            }
+            // sync requested quality id with coreplayer
+            corePlayer.setQualityById(this._requestedQualityId)
+
             this._onPlayListChange.input = corePlayer.onPlayListChange
             this._onQualityChange.input = corePlayer.onQualityChange
             this._onAutoChange.input = corePlayer.onAutoChange
+            this._onQualitySelect.input = corePlayer.onQualityIdSelect
             this._corePlayerRef.value = corePlayer
 
+            corePlayer.log('CorePlayer load ready')
             this._onLoad.fire(new window.Event('load'))
           })
           .catch(error =>

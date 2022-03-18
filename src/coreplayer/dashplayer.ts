@@ -198,7 +198,7 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
     const dashPlayer = this._dashPlayer
     dashPlayer.initialize(video, source.src, this.video.autoplay)
 
-    const disposables = new DisposableStore()
+    const disposables = this._register(new DisposableStore())
     const onManifestParsed = Event.fromNodeEventEmitter(
       dashPlayer,
       MediaPlayer.events.STREAM_INITIALIZED
@@ -222,6 +222,7 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
 
     onManifestParsed(this.updatePlayList, this, disposables)
     onManifestParsed(this.setReady, this, disposables)
+
     onLevelSwitching(this.updateNextQualityLevel, this, disposables)
     onLevelSwitched(
       evt => {
@@ -231,8 +232,6 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
       null,
       disposables
     )
-
-    this._register(disposables)
   }
 
   public setInitialBitrate(bitrate: number) {

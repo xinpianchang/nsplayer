@@ -12,6 +12,7 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
   private _currentLevelIndex: number
   private _nextLevelIndex: number
   private _startLevelIndex: number
+  private _capLevelToPlayerSize = false
   private _changeQualityDisposable = this._register(new MutableDisposable())
   private _sources: SourceWithDetail[]
 
@@ -82,8 +83,29 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
     }
   }
 
+  public setInitialBitrate(bitrate: number) {
+    let index = 0
+    const levels = this.levels.slice().sort((a, b) => a.bitrate - b.bitrate)
+    for (let i = 0; i < levels.length; i++) {
+      // FIXME levels should be safe
+      if (levels[i].bitrate <= bitrate) {
+        index = i
+      } else {
+        break
+      }
+    }
+    this.log('setInitialBitrate', 'start level:', index)
+    this._startLevelIndex = index
+  }
+
   protected setNextLevelIndex(index: number) {
     this._nextLevelIndex = index
+    if (!this.ready) {
+      this.log('setNextLevelIndex', 'start level:', index)
+      this._startLevelIndex = index
+      // should not change any source
+      return
+    }
     const source = this.nextLevel
     if (source) {
       const video = this._video
@@ -98,6 +120,7 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
       video.src = source.src
 
       const reset = () => {
+        this._currentLevelIndex = index
         this._changeQualityDisposable.value = undefined
         video.currentTime = currentTime
         video.autoplay = autoplay
@@ -120,9 +143,13 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
   protected onInit(video: HTMLVideoElement, source: SourceWithMimeType): void {
     source = this.levels[this._startLevelIndex] || source
     this._nextLevelIndex = this._startLevelIndex
+    this._currentLevelIndex = this._nextLevelIndex
+
+    this.updateQualityLevel()
+
     // initialize
     if (video.canPlayType(source.mime)) {
-      const disposables = new DisposableStore()
+      const disposables = this._register(new DisposableStore())
       const onLoadStart = Event.fromDOMEventEmitter(video, 'loadstart')
       const onLoadEnd = Event.fromDOMEventEmitter(video, 'loadedmetadata')
 
@@ -136,49 +163,53 @@ export class BasePlayer extends CorePlayer<SourceWithDetail> {
         disposables
       )
 
-      // must init the current level
-      this._currentLevelIndex = this._nextLevelIndex
+      // may lead a new next level
       this.updatePlayList()
-      this.setReady()
-      this._register(disposables)
+
+      // must init the current level because next level may changed while play list changed
+      this._currentLevelIndex =
+        this._nextLevelIndex >= 0 && this._nextLevelIndex < this._sources.length
+          ? this._nextLevelIndex
+          : this._startLevelIndex
+
+      this.updateQualityLevel()
 
       // FIXME currentTime restore
-      video.src = source.src
+      video.src = this.currentLevel?.src || source.src
       if (video.autoplay) {
         video.play()
       }
+
+      this.setReady()
     } else {
       throw new Error(`cannot play this video with mime type ${source.mime}`)
     }
   }
 
-  public setInitialBitrate(bitrate: number) {
-    let index = 0
-    const levels = this.levels.slice().sort((a, b) => a.bitrate - b.bitrate)
-    for (let i = 0; i < levels.length; i++) {
-      if (levels[i].bitrate < bitrate) {
-        index = i
-      } else {
-        break
-      }
-    }
-    this._startLevelIndex = index
-  }
+  /** FIXME cap level safe begin */
+  // private isLevelSizeSafe(width: number, height: number): boolean {
+  //   if (!this._capLevelToPlayerSize) {
+  //     return true
+  //   }
+  //   return true
+  // }
 
-  public setCapLevelToPlayerSize(_capLevelToPlayerSize: boolean) {
-    // Do Not Support
+  public setCapLevelToPlayerSize(capLevelToPlayerSize: boolean) {
+    this.log('setCapLevelToPlayerSize', capLevelToPlayerSize)
+    this._capLevelToPlayerSize = capLevelToPlayerSize
   }
 
   public get capLevelToPlayerSize(): boolean {
-    return false
+    return this._capLevelToPlayerSize
   }
+  /** FIXME cap level safe end */
 
   public get bandwidthEstimate(): number {
     return NaN
   }
 
   public get name(): string {
-    return 'MP4Player (1.2)'
+    return 'MP4Player (1.3)'
   }
 
   public get supportAutoQuality(): boolean {

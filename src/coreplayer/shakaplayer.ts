@@ -26,6 +26,7 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
   private _shakaPlayer: shaka.Player
   private _nextTrack: shaka.extern.Track | undefined
   private _videoSizeObserverTimer = this._register(new IntervalTimer())
+  private _initialBitrateMutable = this._register(new MutableDisposable())
   private _videoWidth = 0
   private _videoHeight = 0
   private _maxWidth = 1e5
@@ -47,7 +48,17 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
     this._shakaPlayer = player as shaka.Player
 
     // https://github.com/google/shaka-player/pull/2330/commits/4f8e1286610e4ae667f0bb82f4f4fa97b451595c
-    this._shakaPlayer.configure('manifest.dash.ignoreEmptyAdaptationSet', true)
+    this._shakaPlayer.configure({
+      manifest: {
+        dash: {
+          ignoreEmptyAdaptationSet: true,
+          ignoreMinBufferTime: true,
+        },
+      },
+      streaming: {
+        bufferingGoal: 15,
+      },
+    })
 
     this.debugError()
     this._register(toDisposable(() => player.destroy()))
@@ -122,11 +133,29 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
     return this._shakaPlayer.getStats().estimatedBandwidth
   }
 
-  public setInitialBitrate(bitrate: number): void {
+  public setInitialBitrate(bitrate: number) {
+    // abr control doc https://github.com/shaka-project/shaka-player/issues/629
     this._shakaPlayer.configure('abr.defaultBandwidthEstimate', bitrate)
+    if (this.ready) {
+      return
+    }
+    this._initialBitrateMutable.value = this.onOncePlayListReady(() => {
+      let index = 0
+      const levels = this.levels
+      for (let i = 0; i < levels.length; i++) {
+        if (levels[i].bandwidth <= bitrate) {
+          index = i
+        } else {
+          break
+        }
+      }
+      this.log('setInitialBitrate', 'async start level:', index)
+      this._shakaPlayer.selectVariantTrack(levels[index], true)
+    })
   }
 
   public setCapLevelToPlayerSize(capLevelToPlayerSize: boolean) {
+    this.log('setCapLevelToPlayerSize', capLevelToPlayerSize)
     this._capLevelToPlayerSize = capLevelToPlayerSize
   }
 
@@ -190,13 +219,22 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
 
   protected setAutoQualityState(auto: boolean): void {
     this._shakaPlayer.configure('abr.enabled', auto)
+    if (!auto) {
+      this._initialBitrateMutable.value = undefined
+    }
   }
 
   protected setNextLevelIndex(index: number): void {
     const track = this.levels[index]
     if (track) {
       this._nextTrack = track
-      this._shakaPlayer.selectVariantTrack(track, true, this._fastSwitch ? 3 : 8)
+      if (this.ready) {
+        this._shakaPlayer.selectVariantTrack(track, true, this._fastSwitch ? 5 : 8)
+      } else if (!this.autoQualityEnabled) {
+        this.log('setNextLevelIndex', 'start level:', index, `${track.width}x${track.height}`)
+        this._shakaPlayer.selectVariantTrack(track)
+      }
+      this._initialBitrateMutable.value = undefined
     }
   }
 
@@ -205,7 +243,7 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
     player.attach(video)
     player.load(source.src, 0, source.mime)
 
-    const disposables = new DisposableStore()
+    const disposables = this._register(new DisposableStore())
 
     Event.fromDOMEventEmitter(video, 'play')(this.startObserveVideoSize, this, disposables)
     Event.fromDOMEventEmitter(video, 'pause')(this.stopObserveVideoSize, this, disposables)
@@ -251,12 +289,10 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
       disposables
     )
     onTracksChanged(this.updatePlayList, this, disposables)
-    onLoad(this.setReady, this, disposables)
     onLoad(
       () => {
-        if (video.autoplay) {
-          video.play()
-        }
+        video.autoplay && video.play()
+        this.setReady()
       },
       null,
       disposables
@@ -266,7 +302,5 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
     onAutoLevelSwitched(this.updateQualityLevel, this, disposables)
     onManualLevelSwitched(this.updateNextQualityLevel, this, disposables)
     this.onVideoLevelSwitched(this.updateQualityLevel, this, disposables)
-
-    this._register(disposables)
   }
 }

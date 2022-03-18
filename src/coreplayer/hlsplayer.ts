@@ -14,7 +14,7 @@ export class HlsPlayer extends CorePlayer<Level> {
   private _hlsPlayer?: Hls
   private _nextLevel = -1
   private readonly _fastSwitchEnabled: boolean
-  private _readyDisposable = this._register(new MutableDisposable())
+  private _initialBitrateMutable = this._register(new MutableDisposable())
 
   constructor(
     video: HTMLVideoElement,
@@ -39,17 +39,30 @@ export class HlsPlayer extends CorePlayer<Level> {
   }
 
   protected get currentLevel() {
-    return this._hlsPlayer?.levels[this._hlsPlayer?.currentLevel]
+    if (this.ready) {
+      return this._hlsPlayer?.levels[this._hlsPlayer?.currentLevel]
+    } else {
+      return this._hlsPlayer?.levels[this._hlsPlayer?.startLevel]
+    }
   }
 
   protected get nextLevel() {
-    return this._hlsPlayer?.levels[this._nextLevel]
+    if (!this._hlsPlayer) {
+      return undefined
+    }
+    const nextLevelIndex =
+      this._nextLevel < 0
+        ? this._fastSwitchEnabled
+          ? this._hlsPlayer.nextLevel
+          : this._hlsPlayer.nextLoadLevel
+        : this._nextLevel
+    return this._hlsPlayer?.levels[nextLevelIndex]
   }
 
   protected get autoQualityEnabled(): boolean {
     const hlsPlayer = this._hlsPlayer
     if (hlsPlayer) {
-      return hlsPlayer.autoLevelEnabled
+      return this._nextLevel < 0
     }
     return true
   }
@@ -90,9 +103,9 @@ export class HlsPlayer extends CorePlayer<Level> {
         hlsPlayer.loadLevel = -1
       }
     } else {
-      this._nextLevel = hlsPlayer.currentLevel
+      this._nextLevel = hlsPlayer.nextLevel
+      this._initialBitrateMutable.value = undefined
     }
-    this._readyDisposable.value = undefined
   }
 
   protected setNextLevelIndex(index: number) {
@@ -100,19 +113,25 @@ export class HlsPlayer extends CorePlayer<Level> {
     if (!hlsPlayer) {
       return
     }
-    this._nextLevel = index
-    if (this._fastSwitchEnabled) {
-      hlsPlayer.nextLevel = index
-    } else {
-      hlsPlayer.loadLevel = index
+    if (!this.ready) {
+      this.log('setNextLevelIndex', 'start level:', index)
+      hlsPlayer.startLevel = index
     }
-    this._readyDisposable.value = undefined
+    this._nextLevel = index
+    if (this._nextLevel >= 0) {
+      if (this._fastSwitchEnabled) {
+        hlsPlayer.nextLevel = index
+      } else {
+        hlsPlayer.loadLevel = index
+      }
+    }
+    this._initialBitrateMutable.value = undefined
   }
 
   protected onInit(video: HTMLVideoElement, source: SourceWithMimeType) {
     const hlsPlayer = this._hlsPlayer
     if (hlsPlayer) {
-      const disposables = new DisposableStore()
+      const disposables = this._register(new DisposableStore())
       const onManifestParsed = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.MANIFEST_PARSED)
       const onLevelsUpdated = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.LEVEL_UPDATED)
       const onLevelSwitched = Event.fromNodeEventEmitter(hlsPlayer, Hls.Events.LEVEL_SWITCHED)
@@ -120,21 +139,19 @@ export class HlsPlayer extends CorePlayer<Level> {
 
       onLevelsUpdated(this.updatePlayList, this, disposables)
       onManifestParsed(this.updatePlayList, this, disposables)
-      onManifestParsed(this.setReady, this, disposables)
       onManifestParsed(() => {
         hlsPlayer.startLoad()
         video.autoplay && video.play()
+        this.setReady()
       })
       onLevelSwitching(this.updateNextQualityLevel, this, disposables)
       onLevelSwitched(this.updateQualityLevel, this, disposables)
 
       hlsPlayer.loadSource(source.src)
       hlsPlayer.attachMedia(video)
-
-      this._register(disposables)
     } else {
-      this.video.src = source.src
-      if (!this.video.canPlayType(source.mime)) {
+      video.src = source.src
+      if (!video.canPlayType(source.mime)) {
         onUnexpectedError(
           new Error('hlsplayer src not supported: ' + source.src + ', mime: ' + source.mime)
         )
@@ -148,26 +165,24 @@ export class HlsPlayer extends CorePlayer<Level> {
     if (!hlsPlayer) {
       return
     }
-    if (this.ready) {
-      this._readyDisposable.value = undefined
+
+    this._initialBitrateMutable.value = this.onOncePlayListReady(levels => {
       let index = 0
-      const levels = this.levels.slice().sort((a, b) => a.bitrate - b.bitrate)
       for (let i = 0; i < levels.length; i++) {
-        if (levels[i].bitrate < bitrate) {
+        if (levels[i].bitrate <= bitrate) {
           index = i
         } else {
           break
         }
       }
-      const startLevel = levels[index]
-      hlsPlayer.startLevel = this.levels.findIndex(l => l.bitrate === startLevel.bitrate)
-    } else {
-      this._readyDisposable.value = this.onReady(() => this.setInitialBitrate(bitrate))
-    }
+      this.log('setInitialBitrate', 'async start level:', index)
+      hlsPlayer.startLevel = index
+    })
   }
 
   public setCapLevelToPlayerSize(capLevelToPlayerSize: boolean) {
     if (this._hlsPlayer) {
+      this.log('setCapLevelToPlayerSize', capLevelToPlayerSize)
       this._hlsPlayer.capLevelToPlayerSize = capLevelToPlayerSize
     }
   }

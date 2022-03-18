@@ -1,5 +1,5 @@
 import { Source, isHls, getMimeType, isDash, isMp4, isSafari, isMobile } from '../types'
-import { SourceWithMimeType } from '../coreplayer'
+import { QualityLevel, SourceWithMimeType } from '../coreplayer'
 
 export type SourcePolicy = (sources: Source[]) => SourceWithMimeType | undefined
 
@@ -89,4 +89,14 @@ export function areSourcesEqual(s1: Source[], s2: Source[]) {
     return false
   }
   return s1.every((s, idx) => isSourceEqual(s, s2[idx]))
+}
+
+export function isLevelMatch(source: QualityLevel, target: QualityLevel) {
+  if (source.type && target.type && source.type !== target.type) {
+    return false
+  }
+  if (Math.min(source.width, source.height) > Math.min(target.width, target.height)) {
+    return false
+  }
+  return true
 }

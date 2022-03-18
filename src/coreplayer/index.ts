@@ -6,6 +6,7 @@ import {
   Event,
   Emitter,
 } from '@newstudios/common'
+import { isLevelMatch } from '../policy/source'
 import { MimeType, Source } from '../types'
 
 export interface QualityLevel {
@@ -28,6 +29,9 @@ export interface ICorePlayer extends IDisposable {
 
   /** 当 PlayList 发生改变时触发 */
   readonly onPlayListChange: Event<PlayList>
+
+  /** 当选中一个 QualityID 时触发 */
+  readonly onQualityIdSelect: Event<string>
 
   /** 当播放质量切换发生请求时触发 */
   readonly onQualitySwitching: Event<QualityLevel>
@@ -56,6 +60,9 @@ export interface ICorePlayer extends IDisposable {
   /** 实际的当前播放质量ID，未确定时为 auto */
   readonly qualityId: string
 
+  /** 当前选择的质量ID，未确定时为 auto */
+  readonly selectedQualityId: string
+
   /** 实际的下一个播放质量ID，自动时时为 auto */
   readonly nextQualityId: string
 
@@ -79,6 +86,8 @@ export interface ICorePlayer extends IDisposable {
 
   /** 设置 cap to player */
   setCapLevelToPlayerSize(capLevelToPlayer: boolean): void
+
+  log(...messages: any[]): void
 
   /** 如何 retry */
   // retry(): void
@@ -177,6 +186,9 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
   protected readonly _onPlayListChange = this._register(new Emitter<PlayList>())
   public readonly onPlayListChange = this._onPlayListChange.event
 
+  protected readonly _onQualityIdSelect = this._register(new Emitter<string>())
+  public readonly onQualityIdSelect = this._onQualityIdSelect.event
+
   protected readonly _onQualityChange = this._register(new Emitter<QualityLevel>())
   public readonly onQualityChange = this._onQualityChange.event
 
@@ -189,12 +201,26 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
   protected readonly _onReady = this._register(new Emitter<void>())
   public readonly onReady = this._onReady.event
 
+  protected readonly onOncePlayListReady: Event<PlayList> = (listener, thisArgs?, disposables?) => {
+    if (this.playList.length) {
+      listener.call(thisArgs, this.playList)
+      return Disposable.None
+    } else {
+      return Event.once(this.onPlayListChange)(
+        list => listener.call(thisArgs, list),
+        null,
+        disposables
+      )
+    }
+  }
+
   private _playList: PlayList = []
   private _qualityLevel?: QualityLevel
   private _nextQualityLevel?: QualityLevel
   private _autoQuality?: boolean
   private _ready = false
-  private _updateAutoDisposable = new MutableDisposable()
+  private _selectedQualityId = 'auto'
+  private _onPlayListMutable = this._register(new MutableDisposable())
 
   public abstract get name(): string
   public abstract get supportAutoQuality(): boolean
@@ -202,6 +228,9 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
   public abstract setInitialBitrate(bitrate: number): void
   public abstract get capLevelToPlayerSize(): boolean
   public abstract setCapLevelToPlayerSize(capLevelToPlayer: boolean): void
+
+  /** debug flag */
+  public debug = false
 
   protected abstract get levels(): Level[]
   protected abstract get currentLevel(): Level | undefined
@@ -220,9 +249,12 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
     protected readonly source: SourceWithMimeType
   ) {
     super()
-    this._register(this._updateAutoDisposable)
-    const timer = setTimeout(() => this.onInit(video, source))
+    const timer = setTimeout(() => (this.log('onInit'), this.onInit(video, source)))
     this._register(toDisposable(() => clearTimeout(timer)))
+  }
+
+  public log(...args: any) {
+    if (this.debug) console.log(`[${this.name}]`, ...args)
   }
 
   public get playList() {
@@ -231,10 +263,12 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
 
   /** 更新 PlayList 播放级别组，每当获取到新的 PlayList 时请调用此接口 */
   protected updatePlayList() {
+    this.log('updatePlayList', 'new play list detected')
+    this.setPlayList(this.translatePlayList())
     this.updateQualityLevel()
     this.updateNextQualityLevel()
     this.updateAutoQuality()
-    this.setPlayList(this.translatePlayList())
+    this.log('updatePlayList', 'current quality:', this.qualityId)
   }
 
   public get nextQualityLevel() {
@@ -271,25 +305,21 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
 
   /** 每当切换自动清晰度状态时，请调用此接口 */
   protected updateAutoQuality() {
-    const timer = setTimeout(() => {
-      this._updateAutoDisposable.value = undefined
-      const support = this.supportAutoQuality
-      const auto = support && this.autoQualityEnabled
-      if (this._autoQuality !== auto) {
-        this._autoQuality = auto
-        this._onAutoChange.fire(auto)
-        // when enabling auto quality, manually fire quality change to the current
-        if (auto) {
-          this.updateNextQualityLevel()
-          const qualityLevel = this.translateCurrentQuality()
-          if (qualityLevel) {
-            this._onQualityChange.fire(qualityLevel)
-          }
+    const support = this.supportAutoQuality
+    const auto = support && this.autoQualityEnabled
+    if (this._autoQuality !== auto) {
+      this.log('updateAutoQuality', 'state, new:', auto)
+      this._autoQuality = auto
+      this._onAutoChange.fire(auto)
+      // when enabling auto quality, manually fire quality change to the current
+      if (auto) {
+        this.updateNextQualityLevel()
+        const qualityLevel = this.translateCurrentQuality()
+        if (qualityLevel) {
+          this._onQualityChange.fire(qualityLevel)
         }
       }
-    })
-
-    this._updateAutoDisposable.value = toDisposable(() => clearTimeout(timer))
+    }
   }
 
   public get ready() {
@@ -299,8 +329,17 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
   /** 更新当前播放器状态，每当初始化完成后情调用此接口 */
   protected setReady() {
     if (this._ready) return
+    const selectedId = this.autoQuality ? 'auto' : this.qualityId
+    this.log('setReady', 'with selected id:', selectedId)
+    this._selectedQualityId = selectedId
+    this._onQualityIdSelect.fire(selectedId)
     this._ready = true
     this._onReady.fire()
+    this.log('setReady finished')
+  }
+
+  public get selectedQualityId() {
+    return this._selectedQualityId
   }
 
   public get qualityId() {
@@ -319,32 +358,66 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
     }
   }
 
+  /**
+   * @FIXME should find a id similar to playlist in coreplayer
+   * @param id any quality id
+   */
   public setQualityById(id: string): void {
     const auto = isAutoQuality(id)
     if (auto && !this.supportAutoQuality) {
-      throw new Error('auto quality not supported')
+      // when set auto in base player, there is no need to set any quality level
+      return
     }
+    this.log('setQualityById', 'new:', id)
     this.setAutoQualityState(auto)
     this.updateAutoQuality()
     if (auto) {
       // nothing to do
+      if (this.ready) {
+        this._selectedQualityId = 'auto'
+        this._onQualityIdSelect.fire('auto')
+      }
       return
     }
-    if (this.ready) {
-      this.setNextLevelIndex(this.findLevelIndexById(id))
-    } else {
-      const qualityLevel = idToQualityLevel(id)
-      if (qualityLevel) {
-        this.setInitialBitrate(qualityLevel.bitrate)
+
+    // once playlist updated, firstly try to update the next level index.
+    this._onPlayListMutable.value = this.onOncePlayListReady(levels => {
+      this.log('onOncePlayListReady', 'target quality', id)
+      const selectedIndex = this.findLevelIndexById(id)
+      this.log('find', levels.length, this.playList.length, 'levels and select', selectedIndex)
+      this.setNextLevelIndex(selectedIndex)
+      this._selectedQualityId = this.levelIndexToQualityId(selectedIndex)
+      if (this.ready) {
+        this._onQualityIdSelect.fire(this.levelIndexToQualityId(selectedIndex))
       }
+    })
+  }
+
+  protected levelIndexToQualityId(level: number) {
+    if (level < 0) {
+      return 'auto'
     }
+    if (level < this.levels.length) {
+      return qualityLevelToId(this.levelToQuality(this.levels[level]))
+    }
+    console.warn('level is out of index bound or not ready')
+    return 'auto'
   }
 
   private findLevelIndexById(id: string): number {
-    if (this.levels.length) {
+    if (this.playList.length) {
       const level = idToQualityLevel(id)
       if (level) {
-        return this.findLevelIndexByQualityLevel(level)
+        const levels = this.playList
+        let index = 0
+        for (let i = 0; i < levels.length; i++) {
+          if (isLevelMatch(levels[i], level)) {
+            index = i
+          } else {
+            break
+          }
+        }
+        return index
       }
     }
     return -1
@@ -413,6 +486,11 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
     }
     if (changed) {
       this._qualityLevel = qualityLevel
+      if (!this.ready && !this.supportAutoQuality) {
+        // workaround base player selected quality id
+        this._selectedQualityId = this.qualityId
+      }
+      this.log('setQualityLevel', 'onQualityChange:', this.qualityId)
       this._onQualityChange.fire(qualityLevel)
     }
   }
