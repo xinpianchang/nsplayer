@@ -1,10 +1,10 @@
 import {
   IDisposable,
   Disposable,
-  toDisposable,
   MutableDisposable,
   Event,
   Emitter,
+  disposableTimeout,
 } from '@newstudios/common'
 import { isLevelMatch } from '../policy/source'
 import { MimeType, Source } from '../types'
@@ -249,8 +249,7 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
     protected readonly source: SourceWithMimeType
   ) {
     super()
-    const timer = setTimeout(() => (this.log('onInit'), this.onInit(video, source)))
-    this._register(toDisposable(() => clearTimeout(timer)))
+    this._register(disposableTimeout(() => (this.log('onInit'), this.onInit(video, source))))
   }
 
   public log(...args: any) {
@@ -384,7 +383,7 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
     this._onPlayListMutable.value = this.onOncePlayListReady(levels => {
       this.log('onOncePlayListReady', 'target quality', id)
       const selectedIndex = this.findLevelIndexById(id)
-      this.log('find', levels.length, this.playList.length, 'levels and select', selectedIndex)
+      this.log('find', levels.length, 'levels and select', selectedIndex)
       this.setNextLevelIndex(selectedIndex)
       this._selectedQualityId = this.levelIndexToQualityId(selectedIndex)
       if (this.ready) {
@@ -471,6 +470,7 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
     }
     if (changed) {
       this._nextQualityLevel = nextQualityLevel
+      this.log('setNextQualityLevel', 'onQualitySwitching:', this.nextQualityId)
       this._onQualitySwitching.fire(nextQualityLevel)
     }
   }

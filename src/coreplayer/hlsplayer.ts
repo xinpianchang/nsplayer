@@ -144,6 +144,7 @@ export class HlsPlayer extends CorePlayer<Level> {
         video.autoplay && video.play()
         this.setReady()
       })
+
       onLevelSwitching(this.updateNextQualityLevel, this, disposables)
       onLevelSwitched(this.updateQualityLevel, this, disposables)
 

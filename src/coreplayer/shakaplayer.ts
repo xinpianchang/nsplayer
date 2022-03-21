@@ -265,7 +265,7 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
       'variantchanged'
     )
 
-    // hack video event
+    // hack video event, workaround
     onBuffering(
       evt => {
         if (evt.buffering) {

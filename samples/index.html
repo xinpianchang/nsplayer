@@ -211,7 +211,7 @@
     <div class="container2"></div>
   </div>
   <!-- <script src="../dist/index.umd.js"></script> -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/vConsole/3.3.4/vconsole.min.js"></script>
+  <script src="../node_modules/vconsole/dist/vconsole.min.js"></script>
   <script>
       var canTouch = !!(('ontouchstart' in window) || window.DocumentTouch && document instanceof window.DocumentTouch)
       if (canTouch) {
@@ -460,6 +460,12 @@
         $(`#${qualityId}`).classList.add('selected')
       } else {
         $('#auto').classList.add('selected')
+        if (!player.paused) {
+          const text = 'Quality Auto Selected'
+          $('.player-quality-changing').innerText = text
+          toast(text, 1000)
+        }
+
       }
       updateQuality()
     }

@@ -112,13 +112,13 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   private _originalBodyOverflow = ''
   private _disposableParentElement = new MutableDisposable()
   private _delayQualitySwitchRequest = new MutableDisposable()
+  private _delayContainerTimer = new MutableDisposable()
   private _corePlayerRef = new MutableDisposable<ICorePlayer>()
   private _sources: Source[] = []
   private _requestedQualityId = 'auto'
   private _capLevelToPlayerSize = false
   private _sourcePolicy = DefaultSourcePolicy
   private _abrFastSwitch = true
-  private _containerTimer = 0
   private _corePlayerCreateCounter = 0
   private _reset_call = false
 
@@ -160,6 +160,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
 
   private readonly _emitterErrorMutable = this._register(new MutableDisposable())
   private readonly _onEscKeyDownMutable = this._register(new MutableDisposable())
+  private readonly _onSwitchCallMutalbe = this._register(new MutableDisposable())
 
   protected readonly _onQualitySwitchStart = this._register(
     new PauseableEmitter<QualityLevel>({
@@ -170,7 +171,13 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     this._onQualitySwitchStart.event,
     qualityLevel => {
       const currentQualityLevel = idToQualityLevel(this.currentQualityId)
-      return !isSameLevel(qualityLevel, currentQualityLevel)
+      if (isSameLevel(qualityLevel, currentQualityLevel)) {
+        this._onSwitchCallMutalbe.value = disposableTimeout(() =>
+          this._onQualitySwitchEnd.fire(qualityLevel)
+        )
+        return false
+      }
+      return true
     }
   )
 
@@ -183,8 +190,8 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   public readonly onQualitySwitchEnd = Event.filter(
     this._onQualitySwitchEnd.event,
     qualityLevel => {
-      const requestedQualityLevel = idToQualityLevel(this.selectedQualityId)
-      return isSameLevel(qualityLevel, requestedQualityLevel)
+      const selectedQualityLevel = idToQualityLevel(this.selectedQualityId)
+      return isSameLevel(qualityLevel, selectedQualityLevel)
     }
   )
 
@@ -230,15 +237,8 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     this._register(this._disposableParentElement)
     this._register(this._delayQualitySwitchRequest)
     this._register(this._corePlayerRef)
+    this._register(this._delayContainerTimer)
     this._register(toDisposable(() => this._corePlayerCreateCounter++))
-    this._register(
-      toDisposable(() => {
-        if (this._containerTimer) {
-          clearTimeout(this._containerTimer)
-          this._containerTimer = 0
-        }
-      })
-    )
     this.onPause(this._onQualitySwitchStart.pause, this._onQualitySwitchStart)
     this.onPlay(this._onQualitySwitchStart.resume, this._onQualitySwitchStart)
     this.onPause(this._onQualitySwitchEnd.pause, this._onQualitySwitchEnd)
@@ -433,12 +433,8 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     }
 
     this._el = el
-    if (this._containerTimer) {
-      clearTimeout(this._containerTimer)
-    }
-
-    this._containerTimer = window.setTimeout(() => {
-      this._containerTimer = 0
+    this._delayContainerTimer.value = undefined
+    this._delayContainerTimer.value = disposableTimeout(() => {
       this._disposableParentElement.value = undefined
       this._disposableParentElement.value = this._registerContainerListeners(el)
     })
@@ -514,17 +510,19 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
       const disposableStore = new DisposableStore()
       this._delayQualitySwitchRequest.value = disposableStore
 
-      corePlayer.onQualitySwitching(
-        this._onQualitySwitchStart.fire,
-        this._onQualitySwitchStart,
-        disposableStore
-      )
+      if (!isAutoQuality(id)) {
+        corePlayer.onQualitySwitching(
+          this._onQualitySwitchStart.fire,
+          this._onQualitySwitchStart,
+          disposableStore
+        )
 
-      corePlayer.onQualityChange(
-        this._onQualitySwitchEnd.fire,
-        this._onQualitySwitchEnd,
-        disposableStore
-      )
+        corePlayer.onQualityChange(
+          this._onQualitySwitchEnd.fire,
+          this._onQualitySwitchEnd,
+          disposableStore
+        )
+      }
 
       corePlayer.setQualityById(id)
     }
