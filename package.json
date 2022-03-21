@@ -16,6 +16,9 @@
     "dist"
   ],
   "repository": "github:xinpianchang/nsplayer",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
   "scripts": {
     "prebuild": "npm run test && npm run clean",
     "build": "npm run build:types && npm run build:js",
