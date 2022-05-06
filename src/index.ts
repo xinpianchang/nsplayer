@@ -29,6 +29,7 @@ import {
 } from './coreplayer'
 import { SourcePolicy, DefaultSourcePolicy, areSourcesEqual } from './policy/source'
 import createCorePlayer from './createPlayer'
+import 'videoplaybackquality'
 import './fullscreen-polyfill'
 
 export interface NSPlayerOptions {

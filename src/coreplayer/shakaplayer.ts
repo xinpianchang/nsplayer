@@ -9,6 +9,8 @@ import {
   toDisposable,
 } from '@newstudios/common'
 
+import ShakaPlayerEvent from './shaka-env'
+
 export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
   private static readonly _fixed = (function fixPlayer() {
     if (typeof window !== 'undefined') {
@@ -65,7 +67,10 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
   }
 
   private debugError() {
-    const onError = Event.fromDOMEventEmitter<shaka.Player.ErrorEvent>(this._shakaPlayer, 'error')
+    const onError = Event.fromDOMEventEmitter<ShakaPlayerEvent.ErrorEvent>(
+      this._shakaPlayer,
+      'error'
+    )
     this._register(onError(err => console.warn('shaka error', err.detail?.message || '')))
   }
 
@@ -248,19 +253,22 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
     Event.fromDOMEventEmitter(video, 'play')(this.startObserveVideoSize, this, disposables)
     Event.fromDOMEventEmitter(video, 'pause')(this.stopObserveVideoSize, this, disposables)
 
-    const onTracksChanged = Event.fromDOMEventEmitter<shaka.Player.TracksChangedEvent>(
+    const onTracksChanged = Event.fromDOMEventEmitter<ShakaPlayerEvent.TracksChangedEvent>(
       player as Event.DOMEventEmitter,
       'trackschanged'
     )
 
-    const onAutoLevelSwitched = Event.fromDOMEventEmitter<shaka.Player.AdaptationEvent>(
+    const onAutoLevelSwitched = Event.fromDOMEventEmitter<ShakaPlayerEvent.AdaptationEvent>(
       player,
       'adaptation'
     )
 
-    const onLoad = Event.fromDOMEventEmitter<shaka.Player.LoadedEvent>(player, 'loaded')
-    const onBuffering = Event.fromDOMEventEmitter<shaka.Player.BufferingEvent>(player, 'buffering')
-    const onManualLevelSwitched = Event.fromDOMEventEmitter<shaka.Player.VariantChangedEvent>(
+    const onLoad = Event.fromDOMEventEmitter<ShakaPlayerEvent.LoadedEvent>(player, 'loaded')
+    const onBuffering = Event.fromDOMEventEmitter<ShakaPlayerEvent.BufferingEvent>(
+      player,
+      'buffering'
+    )
+    const onManualLevelSwitched = Event.fromDOMEventEmitter<ShakaPlayerEvent.VariantChangedEvent>(
       player,
       'variantchanged'
     )
@@ -299,6 +307,7 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
     )
 
     onAutoLevelSwitched(() => (this._nextTrack = this.currentLevel), null, disposables)
+    // FIXME should quote out this because onVideoLevelSwitched is already existed
     onAutoLevelSwitched(this.updateQualityLevel, this, disposables)
     onManualLevelSwitched(this.updateNextQualityLevel, this, disposables)
     this.onVideoLevelSwitched(this.updateQualityLevel, this, disposables)

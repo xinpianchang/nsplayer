@@ -264,9 +264,9 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
   protected updatePlayList() {
     this.log('updatePlayList', 'new play list detected')
     this.setPlayList(this.translatePlayList())
-    this.updateQualityLevel()
     this.updateNextQualityLevel()
     this.updateAutoQuality()
+    this.updateQualityLevel()
     this.log('updatePlayList', 'current quality:', this.qualityId)
   }
 
@@ -388,6 +388,9 @@ export abstract class CorePlayer<Level = unknown> extends Disposable implements 
       this._selectedQualityId = this.levelIndexToQualityId(selectedIndex)
       if (this.ready) {
         this._onQualityIdSelect.fire(this.levelIndexToQualityId(selectedIndex))
+        // FIXME opt in?
+        // this.updateNextQualityLevel()
+        // this.updateQualityLevel()
       }
     })
   }
