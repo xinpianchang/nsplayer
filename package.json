@@ -101,8 +101,7 @@
     "dashjs": "^4.2.1",
     "delegates": "^1.0.0",
     "hls.js": "^1.1.5",
-    "shaka-player": "^3.3.4",
-    "videoplaybackquality": "^1.0.4"
+    "shaka-player": "^3.3.4"
   },
   "npmName": "nsplayer",
   "peerDependencies": {
