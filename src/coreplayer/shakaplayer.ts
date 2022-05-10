@@ -308,7 +308,7 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
 
     onAutoLevelSwitched(() => (this._nextTrack = this.currentLevel), null, disposables)
     // FIXME should quote out this because onVideoLevelSwitched is already existed
-    onAutoLevelSwitched(this.updateQualityLevel, this, disposables)
+    // onAutoLevelSwitched(this.updateNextQualityLevel, this, disposables)
     onManualLevelSwitched(this.updateNextQualityLevel, this, disposables)
     this.onVideoLevelSwitched(this.updateQualityLevel, this, disposables)
   }
