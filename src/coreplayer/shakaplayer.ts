@@ -155,7 +155,14 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
         }
       }
       this.log('setInitialBitrate', 'async start level:', index)
+      const isAuto = this.autoQualityEnabled
+      if (isAuto) {
+        this._shakaPlayer.configure('abr.enabled', false)
+      }
       this._shakaPlayer.selectVariantTrack(levels[index], true)
+      if (isAuto) {
+        this._shakaPlayer.configure('abr.enabled', true)
+      }
     })
   }
 
