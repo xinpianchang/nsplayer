@@ -1,6 +1,6 @@
 {
   "name": "nsplayer",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "NSPlayer, a player which supports quality list of dash and hls",
   "keywords": [
     "nsplayer",
