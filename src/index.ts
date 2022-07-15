@@ -578,8 +578,11 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     if (oldQualityId !== id) {
       this._requestedQualityId = id
       this._onQualityRequest.fire(id)
-      // must call finally
-      this._updateQuality()
+
+      if (id === this._requestedQualityId) {
+        // no more quality change requested, just update quality
+        this._updateQuality()
+      }
     }
   }
 
