@@ -8,9 +8,6 @@ import {
   MutableDisposable,
   toDisposable,
 } from '@newstudios/common'
-
-import ShakaPlayerEvent from './shaka-env'
-
 export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
   private static readonly _fixed = (function fixPlayer() {
     if (typeof window !== 'undefined') {
@@ -67,10 +64,7 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
   }
 
   private debugError() {
-    const onError = Event.fromDOMEventEmitter<ShakaPlayerEvent.ErrorEvent>(
-      this._shakaPlayer,
-      'error'
-    )
+    const onError = Event.fromDOMEventEmitter<shaka.Player.ErrorEvent>(this._shakaPlayer, 'error')
     this._register(onError(err => console.warn('shaka error', err.detail?.message || '')))
   }
 
@@ -260,22 +254,19 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
     Event.fromDOMEventEmitter(video, 'play')(this.startObserveVideoSize, this, disposables)
     Event.fromDOMEventEmitter(video, 'pause')(this.stopObserveVideoSize, this, disposables)
 
-    const onTracksChanged = Event.fromDOMEventEmitter<ShakaPlayerEvent.TracksChangedEvent>(
+    const onTracksChanged = Event.fromDOMEventEmitter<shaka.Player.TracksChangedEvent>(
       player as Event.DOMEventEmitter,
       'trackschanged'
     )
 
-    const onAutoLevelSwitched = Event.fromDOMEventEmitter<ShakaPlayerEvent.AdaptationEvent>(
+    const onAutoLevelSwitched = Event.fromDOMEventEmitter<shaka.Player.AdaptationEvent>(
       player,
       'adaptation'
     )
 
-    const onLoad = Event.fromDOMEventEmitter<ShakaPlayerEvent.LoadedEvent>(player, 'loaded')
-    const onBuffering = Event.fromDOMEventEmitter<ShakaPlayerEvent.BufferingEvent>(
-      player,
-      'buffering'
-    )
-    const onManualLevelSwitched = Event.fromDOMEventEmitter<ShakaPlayerEvent.VariantChangedEvent>(
+    const onLoad = Event.fromDOMEventEmitter<shaka.Player.LoadedEvent>(player, 'loaded')
+    const onBuffering = Event.fromDOMEventEmitter<shaka.Player.BufferingEvent>(player, 'buffering')
+    const onManualLevelSwitched = Event.fromDOMEventEmitter<shaka.Player.VariantChangedEvent>(
       player,
       'variantchanged'
     )
