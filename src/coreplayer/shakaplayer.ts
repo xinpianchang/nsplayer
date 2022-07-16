@@ -142,7 +142,7 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
       let index = 0
       const levels = this.levels
       for (let i = 0; i < levels.length; i++) {
-        if (levels[i].bandwidth <= bitrate) {
+        if ((levels[i].videoBandwidth || levels[i].bandwidth) <= bitrate) {
           index = i
         } else {
           break
@@ -197,7 +197,12 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
   protected levelToQuality(level: shaka.extern.Track): QualityLevel {
     const fps = computeFPS(level.frameRate)
     return {
-      bitrate: level.bandwidth,
+      bitrate:
+        typeof level.videoId === 'number'
+          ? level.videoBandwidth || level.bandwidth
+          : typeof level.audioId === 'number'
+          ? level.audioBandwidth || level.bandwidth
+          : level.bandwidth,
       width: level.width || 0,
       height: level.height || 0,
       type:

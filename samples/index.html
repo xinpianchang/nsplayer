@@ -202,10 +202,11 @@
     <div class="btn-list">
       <!-- <button class="player-switch-source">更换 Mp4 2</button>
       <button class="player-switch-hls">更换 Hls 2</button> -->
-      <button class="player-switch-source">更换 Mp4</button>
-      <button class="player-switch-hls">更换 Hls</button>
-      <button class="player-switch-dash">更换 Dash</button>
-      <button class="player-switch-dash2">更换 Dash 2</button>
+      <button class="player-switch-source">更换Mp4</button>
+      <button class="player-switch-hls">更换Hls</button>
+      <button class="player-switch-dash">更换Dash</button>
+      <button class="player-switch-dash2">更换Dash 2</button>
+      <button class="player-switch-core">切Dash/Shaka</button>
     </div>
     <input type="range" class="player-seeker" min="0" max="0" value="0" step="0.001" />
     <div class="container2"></div>
@@ -504,6 +505,12 @@
     }
 
     function endSwitch(level) {
+      if (player.autoQuality) {
+        const text = 'Quality Auto Selected'
+        $('.player-quality-changing').innerText = text
+        toast(text, 1000)
+        return
+      }
       const text = `Quality Request Done: ${level.bitrate / 1000} kbps ${level.width}x${level.height}`
       $('.player-quality-changing').innerText = text
       toast(text, 1000)
@@ -732,6 +739,19 @@
       player.setSource(dash2, 3000000)
       initQuality()
       updatePlayback()
+    }
+
+    $('button.player-switch-core').onclick = () => {
+      if (localStorage.getItem('use_dash_js') === 'true') {
+        localStorage.removeItem('use_dash_js')
+      } else {
+        localStorage.setItem('use_dash_js', 'true')
+      }
+      if (player.currentPlayerName.match(/dash|shaka/i)) {
+        const sources = player.getSource()
+        player.stop()
+        player.setSource(sources)
+      }
     }
 
     $('button.player-switch-container').onclick = () => {

@@ -122,6 +122,7 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   private _abrFastSwitch = true
   private _corePlayerCreateCounter = 0
   private _reset_call = false
+  private _CMD_REQUEST_QUALITY = 0
 
   protected readonly _onFullscreenChange = this._register(new Emitter<globalThis.Event>())
   public readonly onFullscreenChange = this._onFullscreenChange.event
@@ -517,13 +518,13 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
           this._onQualitySwitchStart,
           disposableStore
         )
-
-        corePlayer.onQualityChange(
-          this._onQualitySwitchEnd.fire,
-          this._onQualitySwitchEnd,
-          disposableStore
-        )
       }
+
+      corePlayer.onQualityChange(
+        this._onQualitySwitchEnd.fire,
+        this._onQualitySwitchEnd,
+        disposableStore
+      )
 
       corePlayer.setQualityById(id)
     }
@@ -577,9 +578,10 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
     const oldQualityId = this._requestedQualityId
     if (oldQualityId !== id) {
       this._requestedQualityId = id
+      const cmd = ++this._CMD_REQUEST_QUALITY
       this._onQualityRequest.fire(id)
 
-      if (id === this._requestedQualityId) {
+      if (cmd === this._CMD_REQUEST_QUALITY) {
         // no more quality change requested, just update quality
         this._updateQuality()
       }

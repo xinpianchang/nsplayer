@@ -1,6 +1,7 @@
 /**
  * @author TangYe
- * Deprecated，很多问题没有 shakaplayer 处理的好，暂时放弃
+ * Deprecated，很多问题没有 shakaplayer 处理的好，暂时放弃。
+ * 问题包括无法实现 initial quality 和 initial bitrate 精准控制。
  *
  * 但是接口定义比 shaka更加的友好，原声支持 typescript
  */
@@ -91,6 +92,7 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
   private readonly _fastSwitchEnabled: boolean
   private _dashPlayer: MediaPlayerClass
   private _currentLevelIndex = 0
+  private _initialized = false
 
   constructor(
     video: HTMLVideoElement,
@@ -128,7 +130,7 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
   }
 
   protected get levels() {
-    return this._dashPlayer.getBitrateInfoListFor(this._mediaType)
+    return this._initialized ? this._dashPlayer.getBitrateInfoListFor(this._mediaType) : []
   }
 
   protected get currentLevel(): BitrateInfo | undefined {
@@ -136,7 +138,9 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
   }
 
   protected get nextLevel(): BitrateInfo | undefined {
-    return this.levels[this._dashPlayer.getQualityFor(this._mediaType)]
+    return this._initialized
+      ? this.levels[this._dashPlayer.getQualityFor(this._mediaType)]
+      : undefined
   }
 
   protected get autoQualityEnabled(): boolean {
@@ -197,6 +201,8 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
   protected onInit(video: HTMLVideoElement, source: SourceWithMimeType): void {
     const dashPlayer = this._dashPlayer
     dashPlayer.initialize(video, source.src, this.video.autoplay)
+    this._initialized = true
+    this.log('onInit', 'initialized')
 
     const disposables = this._register(new DisposableStore())
     const onManifestParsed = Event.fromNodeEventEmitter(
