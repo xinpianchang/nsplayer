@@ -256,3 +256,8 @@ export interface Source {
   bitrate?: number
   mime?: MimeType
 }
+
+export interface ChangeDetail<T> {
+  prev: T
+  next: T
+}

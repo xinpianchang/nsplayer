@@ -16,7 +16,7 @@ import {
   PauseableEmitter,
   disposableTimeout,
 } from '@newstudios/common'
-import { Source, getMimeType, formatTime, Size, assert } from './types'
+import { Source, getMimeType, formatTime, Size, assert, ChangeDetail } from './types'
 import {
   ICorePlayer,
   PlayList,
@@ -90,6 +90,7 @@ export interface IPlayer extends BasePlayer {
   readonly onQualityChange: Event<QualityLevel>
   readonly onPlayListChange: Event<PlayList>
   readonly onAutoChange: Event<boolean>
+  readonly onQualityWillChange: Event<CustomEvent<ChangeDetail<string>>>
   readonly onQualityRequest: Event<string>
   readonly onQualitySelect: Event<string>
   readonly onReset: Event<globalThis.Event>
@@ -150,6 +151,11 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
 
   protected readonly _onQualityRequest = this._register(new Emitter<string>())
   public readonly onQualityRequest = this._onQualityRequest.event
+
+  protected readonly _onQualityWillChange = this._register(
+    new Emitter<CustomEvent<ChangeDetail<string>>>()
+  )
+  public readonly onQualityWillChange = this._onQualityWillChange.event
 
   protected readonly _onQualitySelect = this._register(new Relay<string>())
   public readonly onQualitySelect = this._onQualitySelect.event
@@ -577,6 +583,16 @@ export default class NSPlayer extends BasePlayer implements IPlayer {
   public requestQualityById(id: string): void {
     const oldQualityId = this._requestedQualityId
     if (oldQualityId !== id) {
+      const evt = new CustomEvent('qualitychange', {
+        detail: { prev: oldQualityId, next: id },
+        cancelable: true,
+      })
+      this._onQualityWillChange.fire(evt)
+
+      if (evt.defaultPrevented) {
+        return
+      }
+
       this._requestedQualityId = id
       const cmd = ++this._CMD_REQUEST_QUALITY
       this._onQualityRequest.fire(id)
