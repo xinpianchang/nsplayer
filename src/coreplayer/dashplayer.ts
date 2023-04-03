@@ -109,6 +109,7 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
           fastSwitchEnabled: this._fastSwitchEnabled,
         },
         abr: {
+          limitBitrateByPortal: capLevelToPlayerSize,
           usePixelRatioInLimitBitrateByPortal: capLevelToPlayerSize,
         },
       },
@@ -261,6 +262,7 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
     dashPlayer.updateSettings({
       streaming: {
         abr: {
+          limitBitrateByPortal: capLevelToPlayerSize,
           usePixelRatioInLimitBitrateByPortal: capLevelToPlayerSize,
         },
       },
@@ -268,9 +270,7 @@ export class DashPlayer extends CorePlayer<BitrateInfo> {
   }
 
   public get capLevelToPlayerSize(): boolean {
-    return (
-      this._dashPlayer.getSettings().streaming?.abr?.usePixelRatioInLimitBitrateByPortal ?? false
-    )
+    return this._dashPlayer.getSettings().streaming?.abr?.limitBitrateByPortal ?? false
   }
 
   public get bandwidthEstimate(): number {

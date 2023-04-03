@@ -11,6 +11,12 @@ declare module 'shaka-player' {
       type: 'manifestparsed'
     }
 
+    export interface MediaQualityChangedEvent extends Event {
+      type: 'mediaqualitychanged'
+      mediaQuality: shaka.extern.MediaQualityInfo
+      position: number
+    }
+
     /** Triggers after metadata associated with the stream is found. Usually they are metadata of type ID3. */
     export interface MetadataEvent extends Event {
       type: 'metadata'

@@ -1,5 +1,6 @@
 import { Source, isHls, isDash, isMp4 } from './types'
 import { SourceWithMimeType, ICorePlayer } from './coreplayer'
+import { isSafari } from './types'
 
 export default function createCorePlayer(
   source: SourceWithMimeType,
@@ -14,7 +15,12 @@ export default function createCorePlayer(
       .then(module => module.HlsPlayer)
       .then(HlsPlayer => callback(new HlsPlayer(video, source, fastSwitch, capLevelToPlayerSize)))
   } else if (isDash(source.mime)) {
-    if (localStorage && localStorage.getItem('use_dash_js') === 'true') {
+    let use_dash_js = false // shaka-player bundle size is smaller than dash.js
+    const manuallySetTarget = (localStorage && localStorage.getItem('use_dash_js')) || null
+    if (manuallySetTarget !== null) {
+      use_dash_js = manuallySetTarget === 'true' || manuallySetTarget === '1'
+    }
+    if (use_dash_js) {
       return import('./coreplayer/dashplayer')
         .then(module => module.DashPlayer)
         .then(DashPlayer =>

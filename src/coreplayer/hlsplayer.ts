@@ -178,6 +178,7 @@ export class HlsPlayer extends CorePlayer<Level> {
       }
       this.log('setInitialBitrate', 'async start level:', index)
       hlsPlayer.startLevel = index
+      // hlsPlayer.nextLoadLevel = index
     })
   }
 
@@ -193,8 +194,7 @@ export class HlsPlayer extends CorePlayer<Level> {
   }
 
   public get bandwidthEstimate(): number {
-    const player = this._hlsPlayer as any
-    return player?.bandwidthEstimate || NaN
+    return this._hlsPlayer?.bandwidthEstimate || NaN
   }
 
   public get name() {

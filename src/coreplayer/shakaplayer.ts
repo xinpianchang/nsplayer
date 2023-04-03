@@ -28,8 +28,8 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
   private _initialBitrateMutable = this._register(new MutableDisposable())
   private _videoWidth = 0
   private _videoHeight = 0
-  private _maxWidth = 1e5
-  private _maxHeight = 1e5
+  // private _maxWidth = 1e5
+  // private _maxHeight = 1e5
   private _bufferMutable = this._register(new MutableDisposable())
 
   protected readonly _onVideoLevelSwitched = this._register(new Emitter<void>())
@@ -39,7 +39,8 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
     video: HTMLVideoElement,
     source: SourceWithMimeType,
     private _fastSwitch = true,
-    private _capLevelToPlayerSize = false
+    // private _capLevelToPlayerSize = false
+    capLevelToPlayerSize = false
   ) {
     super(video, source)
 
@@ -56,6 +57,11 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
       },
       streaming: {
         bufferingGoal: 15,
+        inaccurateManifestTolerance: 1,
+      },
+      abr: {
+        restrictToElementSize: capLevelToPlayerSize,
+        restrictToScreenSize: capLevelToPlayerSize,
       },
     })
 
@@ -86,34 +92,34 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
       this._onVideoLevelSwitched.fire()
     }
 
-    // capLevelToPlayerSize
-    const maxWidth = this._capLevelToPlayerSize
-      ? this.video.clientWidth * this.devicePixelRatio
-      : 1e5
-    const maxHeight = this._capLevelToPlayerSize
-      ? this.video.clientHeight * this.devicePixelRatio
-      : 1e5
+    // // capLevelToPlayerSize
+    // const maxWidth = this._capLevelToPlayerSize
+    //   ? this.video.clientWidth * this.devicePixelRatio
+    //   : 1e5
+    // const maxHeight = this._capLevelToPlayerSize
+    //   ? this.video.clientHeight * this.devicePixelRatio
+    //   : 1e5
 
-    if (maxWidth !== this._maxWidth && !isNaN(maxWidth)) {
-      this._maxWidth = maxWidth
-      this._shakaPlayer.configure('abr.restrictions.maxWidth', maxWidth)
-    }
-    if (maxHeight !== this._maxHeight && !isNaN(maxHeight)) {
-      this._maxHeight = maxHeight
-      this._shakaPlayer.configure('abr.restrictions.maxHeight', maxHeight)
-    }
+    // if (maxWidth !== this._maxWidth && !isNaN(maxWidth)) {
+    //   this._maxWidth = maxWidth
+    //   this._shakaPlayer.configure('abr.restrictions.maxWidth', maxWidth)
+    // }
+    // if (maxHeight !== this._maxHeight && !isNaN(maxHeight)) {
+    //   this._maxHeight = maxHeight
+    //   this._shakaPlayer.configure('abr.restrictions.maxHeight', maxHeight)
+    // }
   }
 
-  private get devicePixelRatio() {
-    const w = window as any as Record<string, number>
-    return (
-      w.devicePixelRatio ||
-      w.mozDevicePixelRatio ||
-      w.webkitDevicePixelRatio ||
-      w.msDevicePixelRatio ||
-      1
-    )
-  }
+  // private get devicePixelRatio() {
+  //   const w = window as any as Record<string, number>
+  //   return (
+  //     w.devicePixelRatio ||
+  //     w.mozDevicePixelRatio ||
+  //     w.webkitDevicePixelRatio ||
+  //     w.msDevicePixelRatio ||
+  //     1
+  //   )
+  // }
 
   private stopObserveVideoSize() {
     this._videoSizeObserverTimer.cancel()
@@ -135,38 +141,49 @@ export class ShakaPlayer extends CorePlayer<shaka.extern.Track> {
   public setInitialBitrate(bitrate: number) {
     // abr control doc https://github.com/shaka-project/shaka-player/issues/629
     this._shakaPlayer.configure('abr.defaultBandwidthEstimate', bitrate)
-    if (this.ready) {
-      return
-    }
-    this._initialBitrateMutable.value = this.onOncePlayListReady(() => {
-      let index = 0
-      const levels = this.levels
-      for (let i = 0; i < levels.length; i++) {
-        if ((levels[i].videoBandwidth || levels[i].bandwidth) <= bitrate) {
-          index = i
-        } else {
-          break
-        }
-      }
-      this.log('setInitialBitrate', 'async start level:', index)
-      const isAuto = this.autoQualityEnabled
-      if (isAuto) {
-        this._shakaPlayer.configure('abr.enabled', false)
-      }
-      this._shakaPlayer.selectVariantTrack(levels[index], true)
-      if (isAuto) {
-        this._shakaPlayer.configure('abr.enabled', true)
-      }
-    })
+    // if (this.ready) {
+    //   return
+    // }
+    // this._initialBitrateMutable.value = this.onOncePlayListReady(() => {
+    //   let index = 0
+    //   const levels = this.levels
+    //   for (let i = 0; i < levels.length; i++) {
+    //     if ((levels[i].videoBandwidth || levels[i].bandwidth) <= bitrate) {
+    //       index = i
+    //     } else {
+    //       break
+    //     }
+    //   }
+    //   this.log('setInitialBitrate', 'async start level:', index)
+    //   const isAuto = this.autoQualityEnabled
+    //   if (isAuto) {
+    //     this._shakaPlayer.configure('abr.enabled', false)
+    //   }
+    //   this._shakaPlayer.selectVariantTrack(levels[index], true)
+    //   if (isAuto) {
+    //     this._shakaPlayer.configure('abr.enabled', true)
+    //   }
+    // })
   }
 
   public setCapLevelToPlayerSize(capLevelToPlayerSize: boolean) {
     this.log('setCapLevelToPlayerSize', capLevelToPlayerSize)
-    this._capLevelToPlayerSize = capLevelToPlayerSize
+    this._shakaPlayer.configure({
+      abr: {
+        restrictToElementSize: capLevelToPlayerSize,
+        restrictToScreenSize: capLevelToPlayerSize,
+      },
+    })
+    // this._capLevelToPlayerSize = capLevelToPlayerSize
   }
 
   public get capLevelToPlayerSize(): boolean {
-    return this._capLevelToPlayerSize
+    return (
+      this._shakaPlayer.getConfiguration().abr.restrictToElementSize ||
+      this._shakaPlayer.getConfiguration().abr.restrictToScreenSize ||
+      false
+    )
+    // return this._capLevelToPlayerSize
   }
 
   protected get levels(): shaka.extern.Track[] {
